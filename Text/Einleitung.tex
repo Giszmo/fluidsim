@@ -1,0 +1,17 @@
+\chapter{Einführung}
+Obwohl schon viel gearbeitet und geforscht wurde auf dem Gebiet der Fluidsimulation, steckt sie immer noch in den Kinderschuhen.
+Insbesondere gibt es noch keine interaktiven Verfahren, die auf großen Gebieten Wasser im Raum, also nicht als H"ohenfeld realisieren. Anwendungen hierfür wären etwa Wasserfälle, Getränke oder Wasserwerfer in Computerspielen, aber auch zum Beispiel Blut in Operationssimulatoren.
+
+Den Anstoß zu einem um Gr"oßenordnungen umfangreicheren Simulationsgebiet brachte Herr Prof. Dr. Westermann, als er vorschlug, Zellinformationen nur noch beim Partikel zu speichern und nach diesem Zellindex die Partikel zu sortieren. Durch diese implizite Anordnung der Zellen wird erreicht, dass der Speicherbedarf unabh"angig von der Größe des simulierten Gebiets wird und meine Software keine 15MB benötigt, um 3000 Partikel in einem Gebiet bestehend aus $(100.000)^3$ Zellen zu simulieren. Möchte man 500.000 Partikel verwenden, so stehen immernoch $(16.000)^3$ Zellen zur Verfügung.
+
+Laut Nick Fosters \& Ronald Fedkiws {\em "`Practical animation of liquids"'} \cite{FOFE} wurde z.B. für die Simulation der Schlammdusche von Dreamworks "`Shrek"' lediglich ein Gitter von 150 x 200 x 150 Zellen verwendet.
+Um auf meiner Datenstruktur Physik berechnen zu k"onnen und vor allem um die zugeh"orige Oberfl"ache zu konstruieren, sind allerdings sehr spezialisierte Ans"atze gefragt.
+So orientiert sich diese Arbeit im Groben an \cite{ETHZ} von Matthias M"uller, David Charypar \& Markus Gross, passt deren Ans"atze aber auf die erw"ahnte Datenstruktur an.
+Au"serdem wird die auf ATI-Grafikkarten vorhandene TRUFORM$^\texttt{TM}$-Erweiterung genutzt, um auf einem relativ groben Gitter mittels des Marching Cube Algorithmus erzeugte, durch ebene Teilfl"achen charakterisierte, also eckige,
+Oberfl"achen rund darzustellen.
+
+\section{Zweck und Aufbau dieser Diplomarbeit}
+Während ursprünglich geplant war, aus den Ergebnissen aus \cite{ETHZ} und \cite{UTAH} eine interaktive Simulation für Flüssigkeiten mit verschiedenen Eigenschaften zu entwickeln, entstanden aus der "`entdeckten"' Methode zur Kollisionsdetektion ganz neue Anforderungen und die Physik trat zunächst in den Hintergrund.
+Außerdem hat diese Arbeit m"oglicherweise auch Relevanz für astronomische Simulationen, wofür die Methoden der Smoothed Particle Hydrodynamics (SPH) ursprünglich entwickelt wurden, da hier Verfahren aufgezeigt werden, die den Simulationsbereich herkömmlicher Anwendungen um Größenordnungen übersteigen.
+
+So werden in Kapitel \ref{Physik} die physikalischen Grundlagen erarbeitet, sowie die Smoothed Particle Hydrodynamic als Methode zur numerischen Lösung von Flussproblemen vorgestellt. In Kapitel \ref{KOL} wird auf die für SPH benötigte Kollisionsdetektion eingegangen und ein neues Verfahren eingeführt. In Kapitel \ref{vis} werden Methoden zur schnellen Oberflächenerzeugung entwickelt. Kapitel \ref{anwendung} stellt ein kleines Demonstrationsprogramm vor, welches sich auch auf der beigefügten CD befindet. In Kapitel \ref{resultate} sind einige Screenshots, so wie Angaben zur Performance zu finden. Kapitel \ref{ausblick} gibt schließlich einen Ausblick auf Anwendungsmöglichkeiten und Entwicklungspotential.

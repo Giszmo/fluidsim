@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Exkurs (Jedem Partikel seine Zelle):</TITLE>
+<META NAME="description" CONTENT="Exkurs (Jedem Partikel seine Zelle):">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="previous" HREF="node9.html">
+<LINK REL="up" HREF="node9.html">
+<LINK REL="next" HREF="node11.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html255"
+  HREF="node11.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html251"
+  HREF="node9.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html247"
+  HREF="node9.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html253"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html256"
+  HREF="node11.html">Implizite Raumpartitionierung</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html252"
+  HREF="node9.html">Explizite Raumpartitionierung</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html248"
+  HREF="node9.html">Explizite Raumpartitionierung</A>
+ &nbsp; <B>  <A NAME="tex2html254"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H4><A NAME="SECTION00410010000000000000"></A>
+<A NAME="vieleGitter"></A>
+<BR>
+Exkurs (Jedem Partikel seine Zelle):
+</H4>
+Um nur die Partikel einer Zelle auf Abstand <SPAN CLASS="MATH"><IMG
+ WIDTH="55" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img55.png"
+ ALT="$ d &lt; r_0$"></SPAN> pr&#252;fen zu m&#252;ssen, können auch verschobene regul&#228;re Gitter der Kantenl&#228;nge <SPAN CLASS="MATH"><IMG
+ WIDTH="30" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img56.png"
+ ALT="$ 4r_0$"></SPAN> erzeugt werden.
+
+<P>
+Eindimensional ben&#246;tigt man zwei Gitter:
+
+<UL>
+<LI>Gitter <SPAN CLASS="MATH"><IMG
+ WIDTH="49" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img57.png"
+ ALT="$ g=0$"></SPAN>:		<!-- MATH
+ $\left\{ \left[j(4r_0); (j+1)(4r_0)\right[ | j\in
+\texttt{N}\right\}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="237" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img58.png"
+ ALT="$ \left\{ \left[j(4r_0); (j+1)(4r_0)\right[ \vert j\in
+\texttt{N}\right\}$"></SPAN>
+</LI>
+<LI>Gitter <SPAN CLASS="MATH"><IMG
+ WIDTH="49" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img59.png"
+ ALT="$ g=1$"></SPAN>:		<!-- MATH
+ $\left\{ \left[(j+\frac{1}{2})(4r_0); (j+\frac{3}{2})(4r_0)
+\right] | j\in \texttt{N}\right\}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="295" HEIGHT="41" ALIGN="MIDDLE" BORDER="0"
+ SRC="img60.png"
+ ALT="$ \left\{ \left[(j+\frac{1}{2})(4r_0); (j+\frac{3}{2})(4r_0)
+\right] \vert j\in \texttt{N}\right\}$"></SPAN>
+</LI>
+</UL>
+Als Kollisionspartner f&#252;r ein Partikel an Position <SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img1.png"
+ ALT="$ x$"></SPAN> kommen nur
+Partikel in Zelle <SPAN CLASS="MATH"><IMG
+ WIDTH="46" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img61.png"
+ ALT="$ (g, j)$"></SPAN> mit
+<BR>
+<DIV ALIGN="CENTER" CLASS="mathdisplay">
+<!-- MATH
+ \begin{eqnarray*}
+g&=&\left|\left(\frac{x}{4r_0} - \left\lfloor \frac{x}{4r_0}\right\rfloor
+\right)*4-2\right|\cr
+j&=&\frac{x-2gr_0}{4r_0}
+\end{eqnarray*}
+ -->
+<TABLE CELLPADDING="0" ALIGN="CENTER" WIDTH="100%">
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="14" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img62.png"
+ ALT="$\displaystyle g$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="221" HEIGHT="64" ALIGN="MIDDLE" BORDER="0"
+ SRC="img64.png"
+ ALT="$\displaystyle \left\vert\left(\frac{x}{4r_0} - \left\lfloor \frac{x}{4r_0}\right\rfloor
+\right)*4-2\right\vert\cr
+j$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL">
+
+in Frage.
+
+<P>
+Im Zweidimensionalen werden vier und im Dreidimensionalen gar 8 Gitter ben&#246;tigt. Zur Veranschaulichung des zweidimensionalen Falls dient Abb. <A HREF="node12.html#fig:movingparticleingrid">3.2</A> auf Seite <A HREF="node12.html#fig:movingparticleingrid"><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="/usr/share/latex2html/icons/crossref.png"></A>.
+
+<P>
+Mir ist keine Implementierungen dieser vielen Gitter bekannt, wohl auch, da ein begrenzender Faktor der Speicherplatz ist, der bei einer expliziten Speicherung aller Zellen im Simulationsgebiet eine Verachtfachung
+<BR>
+(640MB*8=5,12GB) des Speicherbedarfs bedeutet. Deshalb wird in den angrenzenden Zellen in <SPAN  CLASS="textit">einem</SPAN> festen Gitter gesucht.
+<BR><HR>
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Verbinden der Oberflächenpunkte</TITLE>
+<META NAME="description" CONTENT="Verbinden der Oberflächenpunkte">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="previous" HREF="node25.html">
+<LINK REL="up" HREF="node19.html">
+<LINK REL="next" HREF="node29.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html489"
+  HREF="node29.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html485"
+  HREF="node19.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html481"
+  HREF="node27.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html487"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html490"
+  HREF="node29.html">Deformiertes Gitter</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html486"
+  HREF="node19.html">A grid to march</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html482"
+  HREF="node27.html">Exkurs:</A>
+ &nbsp; <B>  <A NAME="tex2html488"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00524000000000000000">
+Verbinden der Oberflächenpunkte</A>
+</H2>
+In der Würfelliste ist nun also sowohl die Eckkonfiguration gespeichert als auch alle relevanten Daten der Oberflächenpunkte. Die Information, welche drei Punkte jeweils zu einem Dreieck verbunden werden, wird nun wie in Kapitel <A HREF="node17.html#MCA">4.1</A> aus einer Tabelle gelesen und als Triangulierungsliste gespeichert.
+
+<P>
+Die Triangulierungsliste ist mit der Liste der Oberflächenpunkte ausreichend, die MC-Oberfläche darzustellen. Um zwischen benachbarten Dreiecken auch mit Lichtberechnung glatte Übergänge zu erhalten ist die Liste der Normalen notwendig. Diese eignet sich aber auch, die Oberfläche runder zu machen. Siehe dazu Kapitel <A HREF="node30.html#truform">4.4</A>.
+
+<P>
+Abb. <A HREF="#fig:MCex01">4.4</A>, <A HREF="#fig:MCex02">4.5</A> und <A HREF="#fig:MCex03">4.6</A> veranschaulichen nochmal in 2D die Vorgehensweise.
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex01"></A><A NAME="718"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Die Anzahl der Partikel mit selbem Zellindex wird im Zellmittelpunkt als Ecke für den MCA gespeichert.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img105.png"
+ ALT="\includegraphics{pix/MCex01.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex02"></A><A NAME="802"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Alle Zellen mit Ecken <EM>in der Flüssigkeit</EM> werden erzeugt.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img106.png"
+ ALT="\includegraphics{pix/MCex02.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex03"></A><A NAME="732"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Punkte auf Kanten, die aus der Flüssigkeit herausführen, werden als Oberflächenpunkte markiert und verbunden.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img107.png"
+ ALT="\includegraphics{pix/MCex03.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html489"
+  HREF="node29.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html485"
+  HREF="node19.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html481"
+  HREF="node27.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html487"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html490"
+  HREF="node29.html">Deformiertes Gitter</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html486"
+  HREF="node19.html">A grid to march</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html482"
+  HREF="node27.html">Exkurs:</A>
+ &nbsp; <B>  <A NAME="tex2html488"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

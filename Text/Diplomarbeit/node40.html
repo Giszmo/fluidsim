@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>trianglelist2teleport</TITLE>
+<META NAME="description" CONTENT="trianglelist2teleport">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node41.html">
+<LINK REL="previous" HREF="node39.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node41.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html675"
+  HREF="node41.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html671"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html665"
+  HREF="node39.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html673"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html676"
+  HREF="node41.html">trianglelist2shift</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html672"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html666"
+  HREF="node39.html">trianglelist2boundary</A>
+ &nbsp; <B>  <A NAME="tex2html674"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00643000000000000000"></A>
+<A NAME="trianglelist2teleport"></A>
+<BR>
+trianglelist2teleport
+</H2>
+
+<P>
+<TT>void Fluid::trianglelist2teleport(float target_x, float target_y, float target_z, float * trianglelist, unsigned int firsttriangleid, unsigned int lasttriangleid)</TT>
+
+<P>
+Wie bei <TT>trianglelist2boundary</TT> (<A HREF="node39.html#trianglelist2boundary">5.4.2</A>) wird auch bei <TT>trianglelist2teleport</TT> eine Grenzfläche definiert, bei deren Überschreiten eine Aktion ausgeführt wird. Die Partikel werden zu der Koordinate <TT>(target_x, target_y, target_z)</TT><SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="21" ALIGN="BOTTOM" BORDER="0"
+ SRC="img140.png"
+ ALT="$ ^T$"></SPAN> ,,teleportiert``. Das heißt, sie werden an den Ort <TT>(target_x, target_y, target_z)</TT><!-- MATH
+ $^T+\vec{\delta}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="48" HEIGHT="48" ALIGN="MIDDLE" BORDER="0"
+ SRC="img141.png"
+ ALT="$ ^T+\vec{\delta}$"></SPAN> verschoben. <!-- MATH
+ $\vec{\delta}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="26" ALIGN="BOTTOM" BORDER="0"
+ SRC="img142.png"
+ ALT="$ \vec{\delta}$"></SPAN> verhindert dabei, dass mehrere Partikel, die im gleichen Zeitschritt zum selben Ort teleportiert wurden exakt die selbe Koordinate erhalten. Generell ist aber zu beachten, daß ein Teleport evtl. viele Partikel an einen Ort zusammenführt und ist deshalb entweder mit einem SetSpeed (<A HREF="node42.html#trianglelist2setspeed">5.4.5</A>) zu kombinieren, indem eine SetSpeed-Fläche an der Zielkoordinaten initialisiert wird, oder der Teleport wird durch ein Shift (<A HREF="node41.html#trianglelist2shift">5.4.4</A>) ersetzt, welcher nicht zu Instabilitäten führt, solange im Zielgebiet kein starker Stau entsteht.
+
+<P>
+Nähere Informationen zu Kontrollpartikeln finden sich auch in Kapitel <A HREF="node14.html#Kontrollpartikel">3.2.2</A>.
+
+<P>
+
+<UL>
+<LI><TT>float target_x, float target_y, float target_z</TT>
+<BR>
+Die Koordinate, zu der die Flüssigkeit teleportiert werden soll.
+</LI>
+<LI><TT>float * trianglelist</TT>
+<BR>
+Liste von Dreieckskoordinaten wie bei <TT>trianglelist2boundary</TT> (<A HREF="node39.html#trianglelist2boundary">5.4.2</A>)
+</LI>
+<LI><TT>unsigned int firsttriangleid, unsigned int lasttriangleid</TT>
+<BR>
+Die Liste von Dreieckskoordinaten wird nur von <!-- MATH
+ $Dreieck_{\tt firsttriangleid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="173" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img137.png"
+ ALT="$ Dreieck_{\tt firsttriangleid}$"></SPAN> bis <!-- MATH
+ $Dreieck_{\tt lasttriangleid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="167" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img138.png"
+ ALT="$ Dreieck_{\tt lasttriangleid}$"></SPAN>
+		verwendet.
+<BR>		<!-- MATH
+ $0 \le {\tt firsttriangleid} < {\tt lasttriangleid} \le n$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="386" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img139.png"
+ ALT="$ 0 \le {\tt firsttriangleid} &lt; {\tt lasttriangleid} \le n$"></SPAN>
+</LI>
+</UL>
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html675"
+  HREF="node41.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html671"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html665"
+  HREF="node39.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html673"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html676"
+  HREF="node41.html">trianglelist2shift</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html672"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html666"
+  HREF="node39.html">trianglelist2boundary</A>
+ &nbsp; <B>  <A NAME="tex2html674"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

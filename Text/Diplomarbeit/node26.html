@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Bezeichnung:</TITLE>
+<META NAME="description" CONTENT="Bezeichnung:">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node27.html">
+<LINK REL="previous" HREF="node25.html">
+<LINK REL="up" HREF="node25.html">
+<LINK REL="next" HREF="node27.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html469"
+  HREF="node27.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html465"
+  HREF="node25.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html459"
+  HREF="node25.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html467"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html470"
+  HREF="node27.html">Exkurs:</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html466"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html460"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+ &nbsp; <B>  <A NAME="tex2html468"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H4><A NAME="SECTION00523010000000000000">
+Bezeichnung:</A>
+</H4> Als Oberflächenpunkt bezeichne ich eine Ecke der gesuchten Oberflächentriangulierung. Als ,,Vorwärtsecke`` bezeichne ich die Ecke einer Zelle, die gemäß der Ecksortierung aus Kapitel <A HREF="node20.html#eckenbestimmen">4.2.1</A> den höchsten Index hätte.
+
+<P>
+Die im letzten Abschnitt erzeugten Würfel würden bereits für einen MCA genügen. Um allerdings die Oberfläche wie in <A HREF="node30.html#truform">4.4</A> beschrieben rund darstellen zu können, werden Normalen und damit auch weitere Informationen über die Umgebung der Oberflächenpunkte benötigt.<A NAME="tex2html9"
+  HREF="footnode.html#foot699"><SUP><SPAN CLASS="arabic">4</SPAN>.<SPAN CLASS="arabic">1</SPAN></SUP></A>
+<P>
+Um Nachbarschaften auszuwerten, wird die eben ermittelte Würfelliste sortiert und durchlaufen.
+Als erstes werden, falls benötigt, die Oberflächenpunkte der drei Kanten erzeugt, welche an die ,,Vorwärtsecke`` angrenzen. Sie bekommen die Koordinate derjenigen benachbarten Ecke, die innerhalb der Flüssigkeit liegt (nur diese liegt explizit vor), plus einen Offset, der proportional zur dritten Wurzel der für diese Ecke gespeicherten Partikelanzahl ist und bereits berechnet vorliegt (Volumen <SPAN CLASS="MATH"><IMG
+ WIDTH="19" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img103.png"
+ ALT="$ \propto$"></SPAN> Partikelanzahl <SPAN CLASS="MATH"><IMG
+ WIDTH="19" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img103.png"
+ ALT="$ \propto$"></SPAN> Kantenlänge<SPAN CLASS="MATH"><IMG
+ WIDTH="12" HEIGHT="21" ALIGN="BOTTOM" BORDER="0"
+ SRC="img104.png"
+ ALT="$ ^3$"></SPAN>). Die Koordinaten in der Liste der Ecken liegen nicht auf den Ecken des zugrunde liegenden regelmäßigen Gitters. Siehe dazu Kapitel <A HREF="node29.html#deformier">4.3</A>.
+
+<P>
+Mit dem Oberflächenvertex wird auch seine Normale in Abhängigkeit von der Eckkonfiguration des aktuellen Würfels erzeugt.
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html469"
+  HREF="node27.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html465"
+  HREF="node25.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html459"
+  HREF="node25.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html467"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html470"
+  HREF="node27.html">Exkurs:</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html466"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html460"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+ &nbsp; <B>  <A NAME="tex2html468"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Explizite Raumpartitionierung</TITLE>
+<META NAME="description" CONTENT="Explizite Raumpartitionierung">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node11.html">
+<LINK REL="previous" HREF="node8.html">
+<LINK REL="up" HREF="node8.html">
+<LINK REL="next" HREF="node10.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html244"
+  HREF="node10.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html240"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html234"
+  HREF="node8.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html242"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html245"
+  HREF="node10.html">Exkurs (Jedem Partikel seine</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html241"
+  HREF="node8.html">Kollisionsdetektion</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html235"
+  HREF="node8.html">Kollisionsdetektion</A>
+ &nbsp; <B>  <A NAME="tex2html243"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00410000000000000000">
+Explizite Raumpartitionierung</A>
+</H1>
+In einem ersten Schritt erprobte ich die Kollisionsdetektion mittels expliziter Speicherung der Partikelindizes pro Raumpartition mit einem regelm&#228;&#223;igen Gitter als Raumpartitionierung. Also etwa <SPAN CLASS="MATH"><IMG
+ WIDTH="40" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
+ SRC="img45.png"
+ ALT="$ 200^3$"></SPAN> Zellen mit der M&#246;glichkeit, pro Zelle 20 Partikelindizes zu speichern. Dies setzt voraus, dass die Physik niemals mehr als 20 Partikel pro Zelle zulässt. Unter Verwendung von vier Byte Adressen für die Partikel resultierte das in einem Speicherbedarf zu Programmstart von <!-- MATH
+ $200^3*20*4$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="104" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
+ SRC="img46.png"
+ ALT="$ 200^3*20*4$"></SPAN>B<SPAN CLASS="MATH"><IMG
+ WIDTH="53" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img47.png"
+ ALT="$ =640$"></SPAN>MB.
+
+<P>
+Der auf diesem Gitter arbeitende Algorithmus musste entweder berechnen, mit welcher der benachbarten 26 Zellen das Partikel interagieren kann (<!-- MATH
+ $20 \le k \le 8*20 = 160$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="184" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img48.png"
+ ALT="$ 20 \le k \le 8*20 = 160$"></SPAN>), oder man durchsucht pauschal alle 27 Zellen, die das Partikel enthalten bzw. die das Partikel enthaltende Zelle umgeben (<!-- MATH
+ $k = 27*20 = 540$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="149" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="img49.png"
+ ALT="$ k = 27*20 = 540$"></SPAN>). Zweiteres ist wohl das Praktikablere, da hier mit einer Zellkantenlänge <SPAN CLASS="MATH"><IMG
+ WIDTH="34" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img50.png"
+ ALT="$ \approx r$"></SPAN> der Wert <SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="img41.png"
+ ALT="$ k$"></SPAN> sehr nahe <SPAN CLASS="MATH"><IMG
+ WIDTH="34" HEIGHT="18" ALIGN="BOTTOM" BORDER="0"
+ SRC="img43.png"
+ ALT="$ k^{opt}$"></SPAN> ist. Ersteres macht nur Sinn, wenn die Zellkantenlänge <SPAN CLASS="MATH"><IMG
+ WIDTH="38" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img51.png"
+ ALT="$ \ll r$"></SPAN> ist, was wiederum bedeuten würde, dass mit 20 Partikeln pro Zelle nur wenige dieser Partikel interagieren können.
+
+<P>
+Eine dynamische Speicherbelegung reduzierte zwar den Speicherbedarf auf 1B pro Zelle f&#252;r leere Zellen, was mir allerdings zum einen nicht die schon angek&#252;ndigten mehr als <SPAN CLASS="MATH"><IMG
+ WIDTH="64" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
+ SRC="img52.png"
+ ALT="$ 10.000^3$"></SPAN> Zellen (<!-- MATH
+ $\hat{=} 10.000^3$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="79" HEIGHT="19" ALIGN="BOTTOM" BORDER="0"
+ SRC="img53.png"
+ ALT="$ \hat{=} 10.000^3$"></SPAN>B<SPAN CLASS="MATH"><IMG
+ WIDTH="34" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img54.png"
+ ALT="$ = 1$"></SPAN>TB) erm&#246;glicht, zum anderen f&#252;r manche Situationen, wie etwa Regen, den Aufwand f&#252;r <SPAN  CLASS="textit">Speicher freigeben</SPAN> und <SPAN  CLASS="textit">Speicher reservieren</SPAN>
+extrem in die Höhe treibt.
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Unterabschnitte</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><UL>
+<LI><UL>
+<LI><A NAME="tex2html246"
+  HREF="node10.html">Exkurs (Jedem Partikel seine Zelle):</A>
+</UL></UL></UL>
+<!--End of Table of Child-Links-->
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html244"
+  HREF="node10.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html240"
+  HREF="node8.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html234"
+  HREF="node8.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html242"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html245"
+  HREF="node10.html">Exkurs (Jedem Partikel seine</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html241"
+  HREF="node8.html">Kollisionsdetektion</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html235"
+  HREF="node8.html">Kollisionsdetektion</A>
+ &nbsp; <B>  <A NAME="tex2html243"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

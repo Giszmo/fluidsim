@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>get_particlearray</TITLE>
+<META NAME="description" CONTENT="get_particlearray">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node49.html">
+<LINK REL="previous" HREF="node47.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node49.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html771"
+  HREF="node49.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html767"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html761"
+  HREF="node47.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html769"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html772"
+  HREF="node49.html">get_surfacegrid</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html768"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html762"
+  HREF="node47.html">particlecount</A>
+ &nbsp; <B>  <A NAME="tex2html770"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION006411000000000000000">
+get_particlearray</A>
+</H2>
+
+<P>
+<TT>void Fluid::get_particlearray(float ** VertexArray, unsigned long &amp; arraylength)</TT>
+
+<P>
+Liefert die Positionen aller Partikel. Die ersten <TT>movingparticlecount()</TT> Koordinaten sind Flüssigkeitspartikel, die <TT>boundaryparticlecount()</TT> folgenden sind Koordinaten von Kontrollpartikeln.
+
+<P>
+
+<UL>
+<LI><TT>float ** VertexArray</TT>
+<BR>
+Dies ist ein Zeiger auf ein Feld von Koordinaten der Form
+		<BR>
+<DIV ALIGN="CENTER" CLASS="mathdisplay">
+<!-- MATH
+ \begin{eqnarray*}
+* VertexArray & = & \{\vec{x}_0,\vec{x}_1,\cdots,\vec{x}_n\}\\
+			\vec{x}_i & = & \{x_i,y_i,z_i\}\\
+\end{eqnarray*}
+ -->
+<TABLE CELLPADDING="0" ALIGN="CENTER" WIDTH="100%">
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="124" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img150.png"
+ ALT="$\displaystyle * VertexArray$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="133" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img151.png"
+ ALT="$\displaystyle \{\vec{x}_0,\vec{x}_1,\cdots,\vec{x}_n\}$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="21" HEIGHT="36" ALIGN="MIDDLE" BORDER="0"
+ SRC="img152.png"
+ ALT="$\displaystyle \vec{x}_i$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="85" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img153.png"
+ ALT="$\displaystyle \{x_i,y_i,z_i\}$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL">
+
+		verwendet den bereits reservierten Speicherbereich, falls <TT>arraylength</TT> ausreichend groß ist. Ansonsten wird der Speicherbereich freigegeben und ein neuer der Länge <!-- MATH
+ $3*{\tt particlecount}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="160" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img154.png"
+ ALT="$ 3*{\tt particlecount}$"></SPAN> reserviert.
+</LI>
+<LI><TT>unsigned long &amp; arraylength</TT>
+<BR>
+Sollte mindestens <!-- MATH
+ $3*{\tt particlecount}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="160" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img154.png"
+ ALT="$ 3*{\tt particlecount}$"></SPAN> sein und wird wie eben beschrieben verwendet, um die Größe des Feldes gegebenenfalls anzupassen. Dieser Wert enthält nach Aufruf von <TT>get_particlearray</TT> <SPAN ID="txt1164"><EM>nicht</EM></SPAN> die Anzahl der geschriebenen Werte!
+</LI>
+</UL>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

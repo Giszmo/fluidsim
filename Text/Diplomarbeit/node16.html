@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Visualisierung</TITLE>
+<META NAME="description" CONTENT="Visualisierung">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node33.html">
+<LINK REL="previous" HREF="node8.html">
+<LINK REL="up" HREF="Diplomarbeit.html">
+<LINK REL="next" HREF="node17.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html324"
+  HREF="node17.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html320"
+  HREF="Diplomarbeit.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html314"
+  HREF="node15.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html322"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html325"
+  HREF="node17.html">Der Marching Cube Algorithmus</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html321"
+  HREF="Diplomarbeit.html">Diplomarbeit</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html315"
+  HREF="node15.html">Bemerkung:</A>
+ &nbsp; <B>  <A NAME="tex2html323"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00500000000000000000"></A>
+<A NAME="vis"></A>
+<BR>
+Visualisierung
+</H1>
+Zur Visualisierung w&#228;hle ich ausschlie&#223;lich eine Art Marching-Cube Verfahren (MCA, siehe [<A
+ HREF="node63.html#MC">3</A>]). Anfangs ließ ich diesen Marching Cube (MC) auf der selben Gitterstruktur laufen wie die Kollisionsdetektion. Das erwies sich aber aus verschiedenen Gründen als nicht optimal. Die auf diese Weise konstruierte Hülle war zu eckig und die Bewegungen zu sprunghaft, da ja nur diskrete Gitterpositionen zur Verfügung standen. Mit den folgenden drei Ansätzen konnten einige Probleme behoben werden.
+
+<UL>
+<LI>Flächen höherer Ordnung
+<BR>
+Da der MCA als kleinste Einheit Oktaeder erzeugt und diese durch einzelne herumfliegende Partikel sehr häufig zu Stande kommen, eignet er sich a priori nicht, auch nur annähernd runde Formen zu generieren. Diesem Problem konnte ich dank ATI-TRUFORM mit einer künstlichen Verfeinerung der Triangulierung mittels der Normaleninformation in jedem Vertex beikommen.
+</LI>
+<LI>Deformiertes Gitter
+<BR>
+Um den Sprüngen von einer Gitterkoordinaten zur nächsten Herr zu werden, führte ich eine Verformung des MC-Gitters ein, die es insbesondere erlaubt, einzelne Tröpfchen darzustellen, ohne dass man eine Gitterstruktur erkennt.
+</LI>
+<LI>Verfeinertes Gitter
+<BR>
+Meine Ansätze, das Gitter zu verfeinern, haben leider nicht den großen Erfolg gebracht, da die unangenehmsten Artefakte des MCA nicht beseitigt werden konnten.
+</LI>
+</UL>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Unterabschnitte</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html326"
+  HREF="node17.html">Der Marching Cube Algorithmus</A>
+<UL>
+<LI><A NAME="tex2html327"
+  HREF="node18.html">Bemerkung:</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html328"
+  HREF="node19.html">A grid to march on</A>
+<UL>
+<LI><A NAME="tex2html329"
+  HREF="node20.html">Ecken bestimmen</A>
+<UL>
+<LI><A NAME="tex2html330"
+  HREF="node21.html">Bemerkung:</A>
+</UL>
+<LI><A NAME="tex2html331"
+  HREF="node22.html">Gitterzellen zu den Ecken</A>
+<UL>
+<LI><A NAME="tex2html332"
+  HREF="node23.html">Einschub:</A>
+<LI><A NAME="tex2html333"
+  HREF="node24.html">Bemerkung:</A>
+</UL>
+<LI><A NAME="tex2html334"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+<UL>
+<LI><A NAME="tex2html335"
+  HREF="node26.html">Bezeichnung:</A>
+<LI><A NAME="tex2html336"
+  HREF="node27.html">Exkurs:</A>
+</UL>
+<LI><A NAME="tex2html337"
+  HREF="node28.html">Verbinden der Oberflächenpunkte</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html338"
+  HREF="node29.html">Deformiertes Gitter</A>
+<LI><A NAME="tex2html339"
+  HREF="node30.html">Flächen höherer Ordnung</A>
+<UL>
+<LI><A NAME="tex2html340"
+  HREF="node31.html">Bemerkung:</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html341"
+  HREF="node32.html">Verfeinerung des Gitters</A>
+</UL>
+<!--End of Table of Child-Links-->
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html324"
+  HREF="node17.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html320"
+  HREF="Diplomarbeit.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html314"
+  HREF="node15.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html322"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html325"
+  HREF="node17.html">Der Marching Cube Algorithmus</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html321"
+  HREF="Diplomarbeit.html">Diplomarbeit</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html315"
+  HREF="node15.html">Bemerkung:</A>
+ &nbsp; <B>  <A NAME="tex2html323"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

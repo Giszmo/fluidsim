@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>tetraederlist2liquid</TITLE>
+<META NAME="description" CONTENT="tetraederlist2liquid">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node44.html">
+<LINK REL="previous" HREF="node42.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node44.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html711"
+  HREF="node44.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html707"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html701"
+  HREF="node42.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html709"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html712"
+  HREF="node44.html">progress</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html708"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html702"
+  HREF="node42.html">trianglelist2setspeed</A>
+ &nbsp; <B>  <A NAME="tex2html710"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00646000000000000000">
+tetraederlist2liquid</A>
+</H2>
+
+<P>
+<TT>void Fluid::tetraederlist2liquid(float * tetraederlist, unsigned int firsttetraid, unsigned int lasttetraid)</TT>
+
+<P>
+Mit dieser Funktion werden Fluidvolumina definiert.
+Die übergebenen Tetraeder werden mit Fluidpartikeln gefüllt.
+Dabei kann es zu einem Abbruch kommen, wenn der zuvor definiert Wert für <TT>maxparticlecount</TT> zu niedrig ist.
+
+<P>
+
+<UL>
+<LI><TT>float * tetraederlist</TT>
+<BR>
+Liste von Tetraederkoordinaten in der Form
+		<BR>
+<DIV ALIGN="CENTER" CLASS="mathdisplay">
+<!-- MATH
+ \begin{eqnarray*}
+{\tt * tetraederlist} & = & \{Tetraeder_0, Tetraeder_1,\cdots,Tetraeder_n\}\\
+			Tetraeder_i & = & \{\vec{x}_i^0,\vec{x}_i^1,\vec{x}_i^2,\vec{x}_i^3\}\\
+			\vec{x}_i^j & = & \{x_i^j,y_i^j,z_i^j\}\\
+			0\le i \le n & \wedge & 0 \le j \le 3
+\end{eqnarray*}
+ -->
+<TABLE CELLPADDING="0" ALIGN="CENTER" WIDTH="100%">
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="142" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img143.png"
+ ALT="$\displaystyle {\tt * tetraederlist}$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="351" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img144.png"
+ ALT="$\displaystyle \{Tetraeder_0, Tetraeder_1,\cdots,Tetraeder_n\}$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="93" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img145.png"
+ ALT="$\displaystyle Tetraeder_i$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="122" HEIGHT="41" ALIGN="MIDDLE" BORDER="0"
+ SRC="img146.png"
+ ALT="$\displaystyle \{\vec{x}_i^0,\vec{x}_i^1,\vec{x}_i^2,\vec{x}_i^3\}$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="22" HEIGHT="44" ALIGN="MIDDLE" BORDER="0"
+ SRC="img131.png"
+ ALT="$\displaystyle \vec{x}_i^j$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="19" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img63.png"
+ ALT="$\displaystyle =$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="91" HEIGHT="44" ALIGN="MIDDLE" BORDER="0"
+ SRC="img132.png"
+ ALT="$\displaystyle \{x_i^j, y_i^j, z_i^j\}$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+<TR VALIGN="MIDDLE"><TD NOWRAP ALIGN="RIGHT"><IMG
+ WIDTH="82" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img133.png"
+ ALT="$\displaystyle 0\le i \le n$"></TD>
+<TD WIDTH="10" ALIGN="CENTER" NOWRAP><IMG
+ WIDTH="17" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img134.png"
+ ALT="$\displaystyle \wedge$"></TD>
+<TD ALIGN="LEFT" NOWRAP><IMG
+ WIDTH="83" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img147.png"
+ ALT="$\displaystyle 0 \le j \le 3$"></TD>
+<TD CLASS="eqno" WIDTH=10 ALIGN="RIGHT">
+&nbsp;</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL">
+
+		Die Reihenfolge der Tetraederecken spielt hier keine Rolle.
+</LI>
+<LI><TT>unsigned int firsttetraid, unsigned int lasttetraid</TT>
+<BR>
+Die Liste von Tetraederkoordinaten wird nur von <!-- MATH
+ $Tetraeder_{\tt firsttetraid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="170" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img148.png"
+ ALT="$ Tetraeder_{\tt firsttetraid}$"></SPAN> bis <!-- MATH
+ $Tetraeder_{\tt lasttetraid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="163" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img149.png"
+ ALT="$ Tetraeder_{\tt lasttetraid}$"></SPAN>
+		verwendet.
+</LI>
+</UL>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>
