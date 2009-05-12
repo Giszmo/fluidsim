@@ -9,6 +9,9 @@
 #include <cstring>
 #include <cstdlib>
 
+#include <boost/thread/thread.hpp>
+#include <boost/bind.hpp>
+
 #include <iostream>
 using namespace std;
 
@@ -1779,10 +1782,21 @@ class Fluid
 		}
 		void sortparticlelists()
 		{
-			quickbubblesort ( 0                ,                     _particlecount - 1 );
-			quickbubblesort ( _maxparticlecount,     _maxparticlecount + _particlecount - 1 );
-			quickbubblesort ( 2 * _maxparticlecount, 2 * _maxparticlecount + _particlecount - 1 );
-			quickbubblesort ( 3 * _maxparticlecount, 3 * _maxparticlecount + _particlecount - 1 );
+			/*
+			quickbubblesort( 0 * _maxparticlecount, 0 * _maxparticlecount + _particlecount - 1 );
+			quickbubblesort( 1 * _maxparticlecount, 1 * _maxparticlecount + _particlecount - 1 );
+			quickbubblesort( 2 * _maxparticlecount, 2 * _maxparticlecount + _particlecount - 1 );
+			quickbubblesort( 3 * _maxparticlecount, 3 * _maxparticlecount + _particlecount - 1 );
+			*/
+			boost::thread my_thread1(boost::bind(&Fluid::quickbubblesort, this, 0 * _maxparticlecount, 0 * _maxparticlecount + _particlecount - 1 ));
+			boost::thread my_thread2(boost::bind(&Fluid::quickbubblesort, this, 1 * _maxparticlecount, 1 * _maxparticlecount + _particlecount - 1 ));
+			boost::thread my_thread3(boost::bind(&Fluid::quickbubblesort, this, 2 * _maxparticlecount, 2 * _maxparticlecount + _particlecount - 1 ));
+			boost::thread my_thread4(boost::bind(&Fluid::quickbubblesort, this, 3 * _maxparticlecount, 3 * _maxparticlecount + _particlecount - 1 ));
+			my_thread1.join();
+			my_thread2.join();
+			my_thread3.join();
+			my_thread4.join();
+			
 			fixsortlistindices();
 			_listssorted = true;
 		}
