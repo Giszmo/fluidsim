@@ -163,19 +163,19 @@ int main ( int argc,char** argv )
 			( *rawdata ) [100*i+j]= ( 5*j ) %256;
 		}
 	}
-	write_24bitbmp ( "..\\..\\hight100x100.sink.bmp", *rawdata );
-	read_24bitbmp ( "..\\..\\hight100x100.sink.bmp", rawdata, w, h );
+	write_24bitbmp ( "hight100x100.sink.bmp", *rawdata );
+	read_24bitbmp ( "hight100x100.sink.bmp", rawdata, w, h );
 
 	boden = bicubic_bezier_surface ( *rawdata );
 	boden.callf ( 100,100 );
 	boden.interpolate();
 
 	//f.set_height_function(groundlevel);	f.set_height_function_normal(groundlevelnormal);
-	//f.set_height_function(sink);	f.set_height_function_normal(sinknormal);
-	f.set_height_function ( flat );	f.set_height_function_normal ( flatnormal );
+	f.set_height_function(sink);	f.set_height_function_normal(sinknormal);
+	//f.set_height_function ( flat );	f.set_height_function_normal ( flatnormal );
 	float testlist[9*1700];
 	int cnt=0;
-	for ( j=2;j<6;j++ )
+/*	for ( j=2;j<6;j++ )
 	{
 		for ( i=0;i<10;i++ )
 		{
@@ -189,7 +189,7 @@ int main ( int argc,char** argv )
 		}
 	}
 	f.trianglelist2boundary ( testlist,0,cnt/9-1 );
-
+	
 	cnt=0;
 	testlist[cnt++]=-3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
 	testlist[cnt++]=3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
@@ -198,15 +198,6 @@ int main ( int argc,char** argv )
 	testlist[cnt++]=3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
 	testlist[cnt++]=3;	testlist[cnt++]=3;	testlist[cnt++]=23;
 	f.trianglelist2shift ( 0,0,-10,testlist,0,1 );
-
-	cnt=0;
-	testlist[cnt++]=-6;	testlist[cnt++]=-6;	testlist[cnt++]=1;
-	testlist[cnt++]=-6;	testlist[cnt++]=6;	testlist[cnt++]=1;
-	testlist[cnt++]=6;	testlist[cnt++]=-6;	testlist[cnt++]=1;
-	testlist[cnt++]=6;	testlist[cnt++]=-6;	testlist[cnt++]=1;
-	testlist[cnt++]=-6;	testlist[cnt++]=6;	testlist[cnt++]=1;
-	testlist[cnt++]=6;	testlist[cnt++]=6;	testlist[cnt++]=1;
-	f.trianglelist2setspeed ( 10,0,0,testlist,0,1 );
 
 	cnt=0;
 	testlist[cnt++]=15;	testlist[cnt++]=15;	testlist[cnt++]=2;
@@ -225,9 +216,19 @@ int main ( int argc,char** argv )
 	testlist[cnt++]=-5;	testlist[cnt++]=5;	testlist[cnt++]=100;
 	testlist[cnt++]=5;	testlist[cnt++]=5;	testlist[cnt++]=100;
 	f.trianglelist2setspeed ( 0,0,-1,testlist,0,1 );
+*/
 
-	float tetralist[12*3] = {	-5,-5,55,		10,-5,60,		-5,10,60,		-5,-5,65/*,
-								6,-6,160,		25,-6,160,		6,-25,160,		6,-6,164*/
+	cnt=0;
+	testlist[cnt++]=-2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
+	testlist[cnt++]=-2;	testlist[cnt++]=2;	testlist[cnt++]=0;
+	testlist[cnt++]=2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
+	testlist[cnt++]=2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
+	testlist[cnt++]=-2;	testlist[cnt++]=2;	testlist[cnt++]=0;
+	testlist[cnt++]=2;	testlist[cnt++]=2;	testlist[cnt++]=0;
+	f.trianglelist2setspeed ( 0,0,70,testlist,0,1 );
+
+	float tetralist[12*3] = {	-5,-5,55,		10,-5,60,		-5,10,60,		-5,-5,65,
+								6,-6,160,		25,-6,160,		6,-25,160,		6,-6,164
 	                        };
 	f.tetraederlist2liquid ( tetralist,0,0 );
 
@@ -383,6 +384,7 @@ void initCallLists ( void )
 	float k=M_PI/6;
 	float i,j;
 	float v[3];
+	/*
 	glNewList ( TRICHTER, GL_COMPILE );
 	for ( j=2;j<6;j++ )
 	{
@@ -400,7 +402,7 @@ void initCallLists ( void )
 		}
 		glEnd();
 	}
-	glEndList();
+	glEndList();*/
 	glNewList ( KUGELLIST, GL_COMPILE );
 	glMaterialf ( GL_FRONT,GL_SHININESS,50 );
 	for ( i=0;i<M_PI-k;i+=k )

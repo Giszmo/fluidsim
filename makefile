@@ -55,7 +55,7 @@ endif
 INCS = -I/share/GL/include/ -I/share/GL/include/Inventor  -I/usr/X11R6/include
 MAKE = make
 
-LIBS     = -lm -L/share/GL/lib -L/usr/X11R6/lib -lglut -L/usr/X11/lib -lGLU -lGL 
+LIBS     =  -lboost_thread -lm -L/share/GL/lib -L/usr/X11R6/lib -lglut -L/usr/X11/lib -lGLU -lGL 
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
