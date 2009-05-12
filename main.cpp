@@ -1,8 +1,3 @@
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include "Vektor.h"
-//#define WIN32
-
 #include "fluid.h"
 #include "bicubic_bezier_surface.h"
 #include <math.h>
