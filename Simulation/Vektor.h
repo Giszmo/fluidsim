@@ -20,8 +20,8 @@ public:
         return _z;
     };
     Vektor() {};
-    Vektor::Vektor(float x, float y, float z):_x(x),_y(y),_z(z) {};
-    Vektor::Vektor(float * v):_x(v[0]),_y(v[1]),_z(v[2]) {};
+    Vektor(float x, float y, float z):_x(x),_y(y),_z(z) {};
+    Vektor(float * v):_x(v[0]),_y(v[1]),_z(v[2]) {};
     ~Vektor() {};
 
     Vektor operator+(const Vektor b) {
