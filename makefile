@@ -25,7 +25,7 @@ OSMVER := $(firstword $(subst ., ,$(OSVER)))
 MK := $(OS).$(OSMVER)_$(COMP_VER)$(VARIANT)
 
 # choose compiler
-CC := gcc -DPCCTS_USE_NAMESPACE_STD
+CC := g++ -DPCCTS_USE_NAMESPACE_STD
 CFLAGS := -g -DVERBOSE 
 ifeq "$(VARIANT)" "dbg"
 CFLAGS += -DTRACE -Wall -pg
