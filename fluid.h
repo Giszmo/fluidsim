@@ -1034,7 +1034,7 @@ class Fluid
 					cnt=1;
 					coord=_particle[sortlist2particleid ( _sortlist[i] ) ].x();
 					++i;
-					while ( actualboxid== ( _sortlist[i] & _BoxIdBitmask ) )
+					while ( ( i<_particlecount ) && ( actualboxid== ( _sortlist[i] & _BoxIdBitmask ) ) )
 					{
 						if ( sortlist2particleid ( _sortlist[i] ) <_particlecount_physik )
 						{
@@ -1059,7 +1059,7 @@ class Fluid
 
 					tmp_nl[++_tmp_node_list_count].cell_id = actualboxid;
 					tmp_nl[  _tmp_node_list_count].count  = cnt;
-					tmp_nl[  _tmp_node_list_count].coord  = coord / ( float ) cnt;
+					tmp_nl[  _tmp_node_list_count].coord  = cellclip ( coord / ( float ) cnt, actualboxid );
 					if ( maxparticlesincell<cnt )
 						maxparticlesincell=cnt;
 				}
@@ -1098,9 +1098,13 @@ class Fluid
 				}
 				actualboxid=tmp_nl[i].cell_id;
 				memset ( found_neighbourcube, 0x00,8*sizeof ( bool ) );
-				tmp_cl[_tmp_cube_count].cell_id=actualboxid;
-				tmp_cl[_tmp_cube_count].nodelist_id[m000]=i;
-				tmp_cl[_tmp_cube_count].ecken=m000bit;
+				const bool own_cube_fits = !cube_wraps ( actualboxid );
+				if ( own_cube_fits )
+				{
+					tmp_cl[_tmp_cube_count].cell_id=actualboxid;
+					tmp_cl[_tmp_cube_count].nodelist_id[m000]=i;
+					tmp_cl[_tmp_cube_count].ecken=m000bit;
+				}
 
 				for ( j=0;j<_tmp_pending_count;j++ )
 				{
@@ -1158,57 +1162,60 @@ class Fluid
 						}
 					}
 				}
-				tmp_pl[_tmp_pending_count++]=_tmp_cube_count;//new cube to _tmp_pending-list
-				++_tmp_cube_count;
+				if ( own_cube_fits )
+				{
+					tmp_pl[_tmp_pending_count++]=_tmp_cube_count;//new cube to _tmp_pending-list
+					++_tmp_cube_count;
+				}
 				//if neighbour not found: create cube, set corner-data accordingly, make it _tmp_pending.
 				if ( _tmp_pending_count+10 >= _tmp_max_pending_count )
 				{
 					resize_unsigned_long_list ( _tmp_pending_list_pointer,_tmp_pending_count,_tmp_max_pending_count, ( unsigned long ) ( _tmp_max_pending_count*1.2+10 ) );
 					tmp_pl=*_tmp_pending_list_pointer;
 				}
-				if ( !found_neighbourcube[m001] )
+				if ( !found_neighbourcube[m001] && !cube_wraps ( actualboxid-_dz ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dz;
 					tmp_cl[_tmp_cube_count].nodelist_id[m001]=i;
 					tmp_cl[_tmp_cube_count].ecken=m001bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m010] )
+				if ( !found_neighbourcube[m010] && !cube_wraps ( actualboxid-_dy ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dy;
 					tmp_cl[_tmp_cube_count].nodelist_id[m010]=i;
 					tmp_cl[_tmp_cube_count].ecken=m010bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m011] )
+				if ( !found_neighbourcube[m011] && !cube_wraps ( actualboxid-_dyz ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dyz;
 					tmp_cl[_tmp_cube_count].nodelist_id[m011]=i;
 					tmp_cl[_tmp_cube_count].ecken=m011bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m100] )
+				if ( !found_neighbourcube[m100] && !cube_wraps ( actualboxid-_dx ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dx;
 					tmp_cl[_tmp_cube_count].nodelist_id[m100]=i;
 					tmp_cl[_tmp_cube_count].ecken=m100bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m101] )
+				if ( !found_neighbourcube[m101] && !cube_wraps ( actualboxid-_dxz ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dxz;
 					tmp_cl[_tmp_cube_count].nodelist_id[m101]=i;
 					tmp_cl[_tmp_cube_count].ecken=m101bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m110] )
+				if ( !found_neighbourcube[m110] && !cube_wraps ( actualboxid-_dxy ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dxy;
 					tmp_cl[_tmp_cube_count].nodelist_id[m110]=i;
 					tmp_cl[_tmp_cube_count].ecken=m110bit;
 					tmp_pl[_tmp_pending_count++]=_tmp_cube_count++;
 				}
-				if ( !found_neighbourcube[m111] )
+				if ( !found_neighbourcube[m111] && !cube_wraps ( actualboxid-_dxyz ) )
 				{
 					tmp_cl[_tmp_cube_count].cell_id=actualboxid-_dxyz;
 					tmp_cl[_tmp_cube_count].nodelist_id[m111]=i;
@@ -1756,11 +1763,72 @@ class Fluid
 		{
 			return _sortlist[listid*_maxparticlecount + id];
 		}
+		//A particle outside the box has no cell, and the index computed for it used
+		//to run past the end of its bit field: x spilled into the y field, y into
+		//z, and z was cut away again by _BoxIdBitmask. A particle a few hundred
+		//metres above the box therefore came back as a cell in the middle of the
+		//pool - it collided with the fluid there, which threw it further out, and
+		//the surface averaged its true position into that cell and drew a triangle
+		//reaching all the way to it. Saturating the index instead leaves a stray in
+		//the border cell it left through, where it meets nothing and does nothing.
+		//
+		//The staggered lists ask for (i+2)>>2 as well as i>>2, so the y and z
+		//indices have to stop two sub-steps short of the end or the +2 copy
+		//overflows the field on its own. x is kept at full resolution and has the
+		//two spare bits of its own that it needs.
+		unsigned __int64 clampcell ( const float v, const unsigned __int64 limit ) const
+		{
+			return ( unsigned __int64 ) _max ( 0.0f, _min ( v, ( float ) limit ) );
+		}
+		//The x, y and z index of a cell, out of its packed id.
+		unsigned __int64 cellidx ( const unsigned __int64 cell_id ) const
+		{
+			return ( ( cell_id >> _maxparticlecountbits ) & ( 4*_cellsx-1 ) ) >> 2;
+		}
+		unsigned __int64 cellidy ( const unsigned __int64 cell_id ) const
+		{
+			return ( cell_id >> _cellsxplus2particlebits ) & ( _cellsy-1 );
+		}
+		unsigned __int64 cellidz ( const unsigned __int64 cell_id ) const
+		{
+			return ( cell_id >> _cellsxplus2yparticlebits ) & ( _cellsz-1 );
+		}
+		//A node stands for one cell, so the point that represents it has to lie in
+		//that cell. The average of the particles in it normally does, but not
+		//always: the cell ids are a step old by the time the surface is built, so a
+		//fast particle is averaged into the cell it has just left, and a particle
+		//that has left the box altogether saturates into a border cell while
+		//keeping its true position. Either way the marching cubes vertices are
+		//placed relative to this point, so an unclipped one drags a triangle with
+		//it - which is the long spike that used to appear in the viewer. Clipping
+		//costs nothing for fluid that is where the sort says it is.
+		//A cube is the eight cells x..x+1, y..y+1, z..z+1 around its own. At the last
+		//cell of a row that +1 neighbour does not exist: the index overflows its bit
+		//field and carries into the next one, so cell (cellsx-1,y,z) and cell
+		//(0,y+1,z) come out exactly _dx apart and are built into one cube whose
+		//corners are the whole width of the domain apart. That is the long spike.
+		//There is no fluid to draw against the far face of the box anyway, so those
+		//cubes are not created at all.
+		bool cube_wraps ( const unsigned __int64 cell_id ) const
+		{
+			return ( cellidx ( cell_id ) +1 >= _cellsx ) ||
+			       ( cellidy ( cell_id ) +1 >= _cellsy ) ||
+			       ( cellidz ( cell_id ) +1 >= _cellsz );
+		}
+		Vektor cellclip ( Vektor p, const unsigned __int64 cell_id ) const
+		{
+			const float x0 = _minx + ( float ) cellidx ( cell_id ) *_cellsize;
+			const float y0 = _miny + ( float ) cellidy ( cell_id ) *_cellsize;
+			const float z0 = _minz + ( float ) cellidz ( cell_id ) *_cellsize;
+			return Vektor ( _min ( _max ( p.x(), x0 ), x0+_cellsize ),
+			                _min ( _max ( p.y(), y0 ), y0+_cellsize ),
+			                _min ( _max ( p.z(), z0 ), z0+_cellsize ) );
+		}
 		unsigned __int64 cell6bitplus ( const float x, const float y, const float z )  	//3bit higher resolution to get the 4(8) staggered grids at once
 		{
-			return	( ( ( ( unsigned __int64 ) ( _cellsz* ( ( z-_minz ) /_lenz ) *4 ) ) << _cellsxplus2ybits ) << 4 ) +
-			       ( ( ( ( unsigned __int64 ) ( _cellsy* ( ( y-_miny ) /_leny ) *4 ) ) << _cellsxplus2bits ) ) +
-			       ( unsigned __int64 ) ( _cellsx* ( ( x-_minx ) /_lenx ) *4 );
+			return	( ( clampcell ( _cellsz* ( ( z-_minz ) /_lenz ) *4, 4*_cellsz-3 ) << _cellsxplus2ybits ) << 4 ) +
+			       ( clampcell ( _cellsy* ( ( y-_miny ) /_leny ) *4, 4*_cellsy-3 ) << _cellsxplus2bits ) +
+			       clampcell ( _cellsx* ( ( x-_minx ) /_lenx ) *4, 4*_cellsx-1 );
 		}
 		unsigned __int64 cell6bitplus ( Vektor x )
 		{
@@ -1768,15 +1836,15 @@ class Fluid
 		}
 		unsigned __int64 cellx2bitplus ( Vektor x )
 		{
-			return	( unsigned __int64 ) ( _cellsx* ( ( x.x()-_minx ) /_lenx ) *4 );
+			return	clampcell ( _cellsx* ( ( x.x()-_minx ) /_lenx ) *4, 4*_cellsx-1 );
 		}
 		unsigned __int64 celly2bitplus ( Vektor x )
 		{
-			return	( unsigned __int64 ) ( _cellsy* ( ( x.y()-_miny ) /_leny ) *4 );
+			return	clampcell ( _cellsy* ( ( x.y()-_miny ) /_leny ) *4, 4*_cellsy-3 );
 		}
 		unsigned __int64 cellz2bitplus ( Vektor x )
 		{
-			return	( unsigned __int64 ) ( _cellsz* ( ( x.z()-_minz ) /_lenz ) *4 );
+			return	clampcell ( _cellsz* ( ( x.z()-_minz ) /_lenz ) *4, 4*_cellsz-3 );
 		}
 		unsigned char get_relevantsortlist ( const unsigned long i )
 		{
