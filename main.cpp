@@ -1,4 +1,7 @@
 #include "fluid.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "bicubic_bezier_surface.h"
 #include <math.h>
 
@@ -74,6 +77,9 @@ bool shownormals= false;
 unsigned short framecount=0;
 unsigned long trianglecount=0;
 bool showcells = false;
+// The default tetrahedron of liquid comes to exactly this many particles; -n
+// scales it from here.
+#define LIQUID_PARTICLES_DEFAULT 1875
 bool showparticles = true;
 bool TRUFORM_ON = false;
 bool showlight = false;
@@ -118,7 +124,17 @@ double rot[16]=
 #define MINZ -200
 #define MAXZ 200
 
-Fluid f = Fluid ( 150000,
+// How many particles the simulation can ever hold. It is a global, so it is
+// built before main() sees the command line; FLUIDSIM_MAX_PARTICLES raises it
+// for runs that want more liquid than the default cap.
+static unsigned long max_particles_from_env()
+{
+	const char * s = getenv ( "FLUIDSIM_MAX_PARTICLES" );
+	unsigned long v = s ? strtoul ( s, 0, 10 ) : 0;
+	return v ? v : 150000;
+}
+
+Fluid f = Fluid ( max_particles_from_env(),
                   0.5f,
                   0.0f, 0.0f, -9.81f,
                   MINX, MINY, MINZ,
@@ -128,13 +144,60 @@ using namespace std;
 unsigned char ** rawdata;
 bicubic_bezier_surface boden;
 
+static void usage ( const char * argv0 )
+{
+	cout <<
+	"usage: " << argv0 << " [options]\n"
+	"\n"
+	"  -n, --particles N   how much liquid to drop, in particles (default 1875).\n"
+	"                      The scene is one tetrahedron; this scales it.\n"
+	"  -t, --threads N     OpenMP threads (default: as many as the machine has)\n"
+	"  -r, --run           start running instead of paused\n"
+	"  -s, --surface       start with the marching-cubes surface on\n"
+	"  -h, --help          this\n"
+	"\n"
+	"To go past the built-in cap of particles the simulation can hold, set\n"
+	"FLUIDSIM_MAX_PARTICLES; it costs memory whether you fill it or not.\n"
+	"Keys are listed in README.md. Example:\n"
+	"\n"
+	"    FLUIDSIM_MAX_PARTICLES=250000 " << argv0 << " -n 100000 -r\n";
+}
+
 int main ( int argc,char** argv )
 {
 	int i,j;
-	for ( i=0;i<200;i++ )
+
+	unsigned long wanted_particles = LIQUID_PARTICLES_DEFAULT;
+	int wanted_threads = 0;
+	for ( i=1; i<argc; ++i )
 	{
-		cout << ( float ) min ( powf ( ( float ) i/40.0f,0.3333f ),0.99f ) << "f, ";
+		string a = argv[i];
+		if ( ( a=="-n" || a=="--particles" ) && i+1<argc )
+			wanted_particles = strtoul ( argv[++i],0,10 );
+		else if ( ( a=="-t" || a=="--threads" ) && i+1<argc )
+			wanted_threads = atoi ( argv[++i] );
+		else if ( a=="-r" || a=="--run" )
+			paused = false;
+		else if ( a=="-s" || a=="--surface" )
+			showcells = true;
+		else if ( a=="-h" || a=="--help" )
+		{
+			usage ( argv[0] );
+			return 0;
+		}
 	}
+	if ( wanted_particles < 1 )
+		wanted_particles = 1;
+	if ( wanted_particles > f.maxparticlecount() )
+	{
+		cout << "Asked for " << wanted_particles << " particles but the simulation holds "
+		     << f.maxparticlecount() << ". Set FLUIDSIM_MAX_PARTICLES higher." << endl;
+		wanted_particles = f.maxparticlecount();
+	}
+#ifdef _OPENMP
+	if ( wanted_threads > 0 )
+		omp_set_num_threads ( wanted_threads );
+#endif
 
 	vertex_array_pointer=new float*;
 	normal_array_pointer=new float*;
@@ -227,10 +290,24 @@ int main ( int argc,char** argv )
 	testlist[cnt++]=2;	testlist[cnt++]=2;	testlist[cnt++]=0;
 	f.trianglelist2setspeed ( 0,0,70,testlist,0,1 );
 
-	float tetralist[12*3] = {	-5,-5,55,		10,-5,60,		-5,10,60,		-5,-5,65,
-								6,-6,160,		25,-6,160,		6,-25,160,		6,-6,164
-	                        };
-	f.tetraederlist2liquid ( tetralist,0,0 );
+	// One tetrahedron of liquid above the jet. tetraeder2particle() subdivides it
+	// until each piece holds one particle, so the particle count is proportional
+	// to the volume: scaling the edges by cbrt(N/1875) asks for N particles.
+	{
+		const float v0[3] = { -5,-5,55 };
+		const float e[3][3] = { { 15, 0, 5 }, { 0, 15, 5 }, { 0, 0, 10 } };
+		float s = powf ( ( float ) wanted_particles / ( float ) LIQUID_PARTICLES_DEFAULT,
+		                 1.0f/3.0f );
+		float tetralist[12];
+		for ( i=0;i<3;++i )
+			tetralist[i] = v0[i];
+		for ( j=0;j<3;++j )
+			for ( i=0;i<3;++i )
+				tetralist[3+3*j+i] = v0[i] + e[j][i]*s;
+		f.tetraederlist2liquid ( tetralist,0,0 );
+	}
+	cout << f.movingparticlecount() << " liquid particles, "
+	     << f.boundaryparticlecount() << " control particles." << endl;
 
 	glutInit ( &argc, argv );
 	initMain();
