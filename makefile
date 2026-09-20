@@ -125,3 +125,14 @@ tags:
 .PRECIOUS: %.cpp
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+
+#
+# headless regression check: run the solver without a window and print a
+# checksum over every particle position, so two builds can be compared
+#
+test/headless: test/headless.cpp fluid.h particle.h vektor.h
+	$(CC) -O2 -g -o $@ $< -lboost_thread
+
+check: test/headless
+	./test/headless 0 3
+	./test/headless 1 3

@@ -1,0 +1,5 @@
+*.o
+main.Linux.*
+main.IRIX.*
+test/headless
+hight100x100.sink.bmp
