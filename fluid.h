@@ -509,6 +509,10 @@ class Fluid
 		{
 			return _particlecount;
 		}
+		unsigned long maxparticlecount ( void )
+		{
+			return _maxparticlecount;
+		}
 		unsigned long boundaryparticlecount ( void )
 		{
 			return _particlecount_boundary;
@@ -2015,6 +2019,10 @@ class Fluid
 		}
 		void newparticle ( const float x, const float y, const float z, const float vx, const float vy, const float vz, const float m, const float t, const PARTICLE_TYPE kind )
 		{
+			//Moving particles live in [0,_particlecount_physik) and control particles
+			//after them, so making room for one means moving the control particle
+			//that sits in the way to the end of the list. That is a move, not a new
+			//particle: newcontrollparticle() has counted it as new, so undo that.
 			if ( _particlecount_boundary > 0 )
 			{
 				newcontrollparticle (
@@ -2028,6 +2036,11 @@ class Fluid
 				    _particle[_particlecount_physik].v().y(),
 				    _particle[_particlecount_physik].v().z(),
 				    _particle[_particlecount_physik].kind() );
+				--_particlecount_boundary;
+			}
+			else
+			{
+				++_particlecount;
 			}
 			_particle[_particlecount_physik].set ( x,y,z,vx,vy,vz,_particlesize,t,kind );
 
@@ -2042,7 +2055,6 @@ class Fluid
 			_particle[_particlecount_physik].set_sortlistindex ( 3,_maxparticlecount*3+_particlecount_physik );
 
 			putparticle2cell ( _particlecount_physik++ );
-			_particlecount++;
 		}
 		void newcontrollparticle ( const float x, const float y, const float z, const float bx, const float by, const float bz, const float dx, const float dy, const float dz, PARTICLE_TYPE kind )
 		{
