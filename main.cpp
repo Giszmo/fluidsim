@@ -91,6 +91,18 @@ bool tessellation_on = true;
 //adaptive: close water is smooth, distant spray costs nothing.
 float tess_pixels_per_segment = 12.0f;
 float tess_max_level = 8.0f;
+//The other way to draw the same water: no mesh, the particles splatted into a
+//depth buffer which is then smoothed and shaded. See shaders.cpp. Off by
+//default because the marching-cubes surface is what this program has always
+//drawn; -S or the S key turns it on instead of the particle dots.
+bool screenspace_on = false;
+//Splat radius as a multiple of the particle radius. Particles sit about a
+//diameter apart, so spheres of exactly one radius leave gaps between them and
+//the smoothing pass has holes to fill; half again closes them without turning
+//the spray into blobs.
+float screenspace_radius = 1.5f;
+//How many times the depth buffer is blurred. More is smoother and slower.
+int screenspace_smoothing = 4;
 bool showlight = false;
 float groundlevel ( float a, float b );
 Vektor groundlevelnormal ( float a, float b );
@@ -165,6 +177,8 @@ static void usage ( const char * argv0 )
 	"  -s, --surface       start with the marching-cubes surface on\n"
 	"  -F, --flat          do not tessellate the surface (PN triangles are on by\n"
 	"                      default wherever the driver has OpenGL 4)\n"
+	"  -S, --screenspace   draw the water with screen-space fluid rendering\n"
+	"                      instead of particle dots - no mesh at all\n"
 	"  -h, --help          this\n"
 	"\n"
 	"To go past the built-in cap of particles the simulation can hold, set\n"
@@ -193,6 +207,8 @@ int main ( int argc,char** argv )
 			showcells = true;
 		else if ( a=="-F" || a=="--flat" )
 			tessellation_on = false;
+		else if ( a=="-S" || a=="--screenspace" )
+			screenspace_on = true;
 		else if ( a=="-h" || a=="--help" )
 		{
 			usage ( argv[0] );
@@ -660,6 +676,16 @@ void kbf ( unsigned char key,int x, int y )
 			else
 				cout << "PN triangle tessellation " << ( tessellation_on ? "on" : "off" ) << endl;
 			break;
+		case 'S' :
+			screenspace_on = !screenspace_on;
+			if ( screenspace_on && !screenspace_available() )
+			{
+				cout << "no screen-space fluid here: " << screenspace_error() << endl;
+				screenspace_on = false;
+			}
+			else
+				cout << "screen-space fluid " << ( screenspace_on ? "on" : "off" ) << endl;
+			break;
 		case 'T' :
 			tess_max_level *= 2.0f;
 			if ( tess_max_level > 16.0f )
@@ -885,7 +911,10 @@ void DisplayMain ( void )
 				glDisable ( GL_LIGHTING );
 		}
 	}
-	if ( showparticles )
+	//Screen-space fluid takes the place of the particle dots: it is the same
+	//particles, drawn as a surface instead of as points. Drawn further down,
+	//after the rest of the scene, because it is transparent.
+	if ( !( screenspace_on && screenspace_available() ) && showparticles )
 	{
 		f.get_particlearray ( particle_coords_pointer/*,particle_colors_pointer*/, cc_arraylength );
 
@@ -915,6 +944,16 @@ void DisplayMain ( void )
 	glVertex3f ( 0,0,0 );
 	glVertex3f ( 0,0,4*f.particleradius() );
 	glEnd();
+
+	//Last, because the water is transparent and has to be composited over
+	//whatever is behind it. Drawn any earlier it blends against the cleared
+	//background instead of against the scene, and comes out dark.
+	if ( screenspace_on && screenspace_available() )
+	{
+		f.get_particlearray ( particle_coords_pointer, cc_arraylength );
+		screenspace_render ( *particle_coords_pointer, f.movingparticlecount(),
+		                     f.particleradius() *screenspace_radius, screenspace_smoothing );
+	}
 
 	glutSwapBuffers ();
 	framecount++;

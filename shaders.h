@@ -40,4 +40,33 @@ const char * surface_shaders_error();
 void surface_tessellation_bind ( float pixels_per_segment, float max_level );
 void surface_tessellation_unbind();
 
+//------------------------------------------------------------------------------
+// Screen-space fluid, the other way to draw the same particles
+//------------------------------------------------------------------------------
+//
+// No mesh at all. The particles are splatted as spheres into a depth buffer,
+// the depth is smoothed, and the surface is shaded from the normals of the
+// smoothed depth - van der Laan, Green and Sainz, "Screen Space Fluid Rendering
+// with Curvature Flow", I3D 2009. It is what the real-time fluid renderers do,
+// because there is no marching cubes pass, nothing to re-upload per frame, and
+// the cost is per pixel rather than per particle.
+//
+// What it cannot give you is geometry: no reflections off the water, no shadow
+// casting, nothing to export. That is what the tessellated marching-cubes path
+// above is for.
+
+//Compiled by surface_shaders_init() along with the rest.
+bool screenspace_available();
+const char * screenspace_error();
+
+//Draw count particles, three floats each, as a fluid surface. radius is in
+//world units and smoothing is how many times the depth is blurred - more is
+//smoother and slower. Uses the projection and lights already set, writes depth,
+//and leaves the GL state as it found it. False if it could not draw.
+bool screenspace_render ( const float * positions, unsigned long count,
+                          float radius, int smoothing );
+
+//Give the render targets back. Safe on a context that is already gone.
+void screenspace_free();
+
 #endif

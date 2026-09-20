@@ -74,6 +74,7 @@ makefile. There is no Boost dependency any more.
 | `-r` | start running instead of paused |
 | `-s` | start with the marching-cubes surface on |
 | `-F` | draw the surface as flat triangles; PN triangle tessellation is on by default wherever the driver has OpenGL 4 |
+| `-S` | draw the water with screen-space fluid rendering instead of particle dots — no mesh at all |
 | `FLUIDSIM_MAX_PARTICLES` | capacity, default 150 000. It has to be an environment variable because the `Fluid` is a global and is built before `main()` sees the command line |
 
 The simulation starts **paused**; press `p` to run it. Moving the mouse over the window
@@ -92,6 +93,7 @@ rotates the camera. It prints a frames/particles line per second to stdout — a
 | `l` | toggle lighting |
 | `t` | PN triangle tessellation of the surface on / off |
 | `T` | cycle how far a triangle may be subdivided: 2, 4, 8, 16 |
+| `S` | screen-space fluid on / off |
 | `f` / `g` | flat / smooth shading |
 | `w` / `q` / `e` / Tab | wireframe, points, back-face lines, front-face cull |
 | `y` | print the volume of the closed surface |
@@ -270,6 +272,58 @@ tessellated frame is comparable with an untessellated one. `t` toggles between t
 
 On a driver without OpenGL 4 tessellation the program says so once on stdout and draws
 plain triangles; nothing else changes.
+
+## The other way to draw it: screen-space fluid
+
+`-S`, or the `S` key, throws the mesh away. The particles are splatted into a
+depth buffer as spheres, the depth buffer is smoothed, and the surface is shaded from
+the normals of the smoothed depth — van der Laan, Green and Sainz, *Screen Space Fluid
+Rendering with Curvature Flow*, I3D 2009, with a bilateral blur where they used
+curvature flow. It is what the real-time fluid renderers do, FleX and PhysX among them.
+
+Four passes, all in `shaders.cpp`:
+
+1. every particle as a sphere, writing its eye-space z and a real depth, so spheres
+   intersect each other instead of being flat discs;
+2. every particle again, additively and with no depth test, for how much water is in
+   front of each pixel — that is what makes thin spray pale and a deep pool dark;
+3. the depth, blurred. The filter radius is the splat's own projected size,
+   recomputed per pixel from the depth that is there, so the filter is the same size in
+   *world* units at every distance. A fixed pixel radius smears the far water into a
+   sheet and barely touches the near water;
+4. one full-screen triangle: rebuild the eye position from the smoothed depth, take the
+   normal from its screen derivatives, light it, write depth so the water sits properly
+   in the scene.
+
+Two things worth knowing about it.
+
+**The water is composited last.** It is transparent, so it has to be drawn after the
+rest of the frame; drawn where the particle dots used to be, it blends against the
+cleared background and comes out black.
+
+**It is lit by a sky, not only by the scene's two lamps.** Water absorbs red first, and
+the only lamp facing the camera in this scene is the red one, so deep water shaded from
+those two lights alone goes black. The composite adds a hemisphere ambient — pale blue
+from world +z, dark from below — which is what actually lights water outdoors.
+
+What it gives you: no marching cubes pass, no mesh to rebuild and re-upload every frame,
+and a cost that is per pixel rather than per particle. What it cannot give you is
+geometry — no reflections off the water, no shadow casting, nothing to export. That is
+what the tessellated marching-cubes path is for.
+
+### What each way costs
+
+One frozen frame, 30 014 particles, 1024×768, on a machine with **no GPU at all** — Mesa's
+llvmpipe rasterises in software, so every pixel below is CPU work and a real GPU
+reorders this completely. The marching-cubes rows include rebuilding the mesh on the CPU
+every frame, which is the cost screen-space does not pay.
+
+| | frames/s |
+|---|---|
+| nothing drawn | 2090 |
+| marching cubes, flat triangles | 351 |
+| marching cubes + PN tessellation | 130 |
+| screen-space fluid | 60 |
 
 ## Fixed here
 
