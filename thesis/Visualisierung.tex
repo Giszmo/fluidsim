@@ -1,0 +1,201 @@
+\chapter{Visualisierung}
+\label{vis}
+Zur Visualisierung w"ahle ich ausschlie"slich eine Art Marching-Cube Verfahren (MCA, siehe \cite{MC}). Anfangs ließ ich diesen Marching Cube (MC) auf der selben Gitterstruktur laufen wie die Kollisionsdetektion. Das erwies sich aber aus verschiedenen Gründen als nicht optimal. Die auf diese Weise konstruierte Hülle war zu eckig und die Bewegungen zu sprunghaft, da ja nur diskrete Gitterpositionen zur Verfügung standen. Mit den folgenden drei Ansätzen konnten einige Probleme behoben werden.
+\begin{itemize}
+	\item {Flächen höherer Ordnung}\\
+		Da der MCA als kleinste Einheit Oktaeder erzeugt und diese durch einzelne herumfliegende Partikel sehr häufig zu Stande kommen, eignet er sich a priori nicht, auch nur annähernd runde Formen zu generieren. Diesem Problem konnte ich dank ATI-TRUFORM mit einer künstlichen Verfeinerung der Triangulierung mittels der Normaleninformation in jedem Vertex beikommen.
+	\item {Deformiertes Gitter}\\
+		Um den Sprüngen von einer Gitterkoordinaten zur nächsten Herr zu werden, führte ich eine Verformung des MC-Gitters ein, die es insbesondere erlaubt, einzelne Tröpfchen darzustellen, ohne dass man eine Gitterstruktur erkennt.
+	\item {Verfeinertes Gitter}\\
+		Meine Ansätze, das Gitter zu verfeinern, haben leider nicht den großen Erfolg gebracht, da die unangenehmsten Artefakte des MCA nicht beseitigt werden konnten.
+\end{itemize}
+\section{Der Marching Cube Algorithmus}
+\label{MCA}
+In seiner ursprünglichen Variante wird dieser Algorithmus zur Berechnung von Isoflächen skalarer Werte verwendet, die auf einem regelmäßigen Gitter bekannt sind. Im Dreidimensionalen werden alle "`Würfel (Cubes) benachbarter Knoten"' (siehe Abb. \ref{fig:MC1}) durchlaufen.
+\begin{figure}[htb]
+	\begin{center}
+	\includegraphics{pix/MC1.eps}
+	\caption{Marching Cube auf einem regelmäßigen Skalarfeld mit Knoten unterhalb eines Isowertes (rot), dadurch resultierenden Punkten auf den Kanten (blau) und der mit Hilfe einer Tabelle erzeugten zugehörigen Triangulierung (grün).}
+	\label{fig:MC1}
+	\end{center}
+\end{figure}
+Für jeden Würfel werden die Ecken bestimmt, die einen festen Isowert überschreiten. Auf Kanten, die die Isofläche durchdringen, da die beteiligten Ecken nicht beide ober- bzw. unterhalb des Isowertes liegen, wird mittels Interpolation bestimmt, an welcher Stelle der Isowert angenommen wird. Nun werden auf Grund der Eck-Konfiguration (einfacher Tabellenaufruf, siehe \cite{MC}) die ermittelten Punkte auf den Kanten zu einer Isofläche des einzelnen Würfels verbunden. Beim Durchlaufen des Skalarfeldes können die Daten des vorangegangenen Würfels, also Skalarwerte an schon ausgewerteten Ecken und Kanten wiederverwendet werden. So marschiert also der Würfel durch das Skalarfeld und erzeugt, unter der Annahme von Randpunkten des Skalarfeldes, die alle unterhalb des Isowertes liegen, eine geschlossene Hülle um alle Knoten, die oberhalb liegen. Die Vorschrift für die Triangulierung eines Würfels ist damit noch nicht eindeutig. Siehe dazu Abb. \ref{fig:MC3}.
+\begin{figure}[htb]
+	\begin{center}
+	\includegraphics{pix/MC3.eps}
+	\caption{Wahlfreiheit der Triangulierung}
+	\label{fig:MC3}
+	\end{center}
+\end{figure}
+
+Auf der Website \cite{MC} fand ich die Liste einer Beispielimplementierung des MCA. Diese habe ich, leicht abgewandelt, in meiner Arbeit verwendet. So stellte ich sicher, dass in Situationen wie in Abb. \ref{fig:MC3} stets Fall (a) gewählt wird, da ohnehin eines der störendsten Artefakte des Algorithmus {\em instabile}, durch Flackern auffallende Verbindungen zwischen einzelnen Tropfen oder Flüssigkeitsansammlungen sind.
+
+Je näher sich Partikel kommen müssen, um als eine Zusammenhangskomponente dargestellt zu werden, desto größer ist auch die Wahrscheinlichkeit, dass die Physik eine parallele Bewegung auf einer kritischen Distanz verhindert, welche besonders zu derartigen Artefakten führen dürfte.
+
+\paragraph{Bemerkung:} Da auch sehr nah benachbarte Partikel diagonal benachbart sein können, könnte diese These auch falsch sein. Generell ist aber eine Bewegung nahe dem Grenzfall zwischen {\em verbunden} und {\em nicht verbunden} nie auszuschließen.
+
+Die Physik ist zwar wie in Kapitel \ref{KOL} gezeigt auf einem sehr großen Gebiet berechenbar. Nur leider liegt auf diese Weise nun auch kein für den MCA benötigtes Skalarfeld vor. Dieses auf dem gesamten Simulationsgebiet zu erzeugen würde wieder eingangs beschriebene Speichermengen verlangen.
+
+\section{A grid to march on}
+Um nun den MC loslaufen zu lassen, wird ein Gitter benötigt.
+Genau genommen benötigt der MCA aber nur jene Gitterzellen, deren Ecken sowohl innerhalb, als auch außerhalb der Flüssigkeit liegen.
+Ein guter Anfang sind also jene Zellen, die überhaupt Ecken in der Flüssigkeit haben.
+
+\subsection{Ecken bestimmen}
+\label{eckenbestimmen}
+Der erste Schritt ist also die Bestimmung dieser Ecken (siehe Abb. \ref {fig:MCex01} auf Seite \pageref{fig:MCex01}).
+Dazu verwendete ich eine Liste ähnlich der Listen, die für die Physik verwendet werden (siehe Kapitel \ref{verfeinertesgitter}). Nun wird der Zellindex aufeinanderfolgender Partikel verglichen und eine Liste angelegt, die jedem verwendeten Zellindex die Anzahl der darin befindlichen Partikel zuordnet. Auf diese Weise werden die Zellen der physikalischen Simulation zu den Ecken des MCA.
+
+\paragraph{Bemerkung:}Die hier ebenfalls vorhandene Dichte $\rho$ der Partikel aufzusummieren hatte bei meinen Versuchen nur negative Effekte, sollte aber weiterhin in Betracht gezogen werden.
+
+\subsection{Gitterzellen zu den Ecken}
+\label{pendinglist}
+Als nächstes wird eine Liste der an die gefundenen Ecken angrenzenden Würfel erzeugt. Da davon ausgegangen werden kann, dass der Zellindex der $i$-ten Ecke größer ist als der der ($i-1$)-ten, wurde der Würfel, der von der $i$-ten Ecke und
+\begin{equation*}
+	\mbox{$i$-te Ecke + Würfelgröße} \cdot\left(\begin{matrix} 1 \\ 1 \\ 1 \end{matrix}\right)
+\end{equation*}
+aufgespannt wird, noch nicht erzeugt und kann so {\em ungeprüft} als neuer Würfel in eine Würfelliste aufgenommen werden. Jeder andere an die $i$-te Ecke angrenzende Würfel könnte bereits als solch ein {\em ungeprüft aufgenommener} Würfel in der Liste vorhanden sein.
+
+\paragraph{Einschub:}Alle acht an die Ecke grenzenden Würfel zu erzeugen und in eine Hashtable zu schreiben hätte zwar über 1000 Zeilen Code sparen können, wäre aber sicher wesentlich langsamer, da mein Code die spezielle Struktur des Problems ausnützt.
+
+Deshalb wird nun auch eine Liste von Würfeln, "`pending\_cubes"', also "`anstehende Würfel"' habe ich sie getauft, durchlaufen, deren Zellindex im letzten Durchlauf noch als potentieller Nachbarwürfel eines noch kommenden neuen Würfels in Frage kam. Würfel, für die dies nicht mehr zutrifft, werden aus der pending\_list gelöscht. Wird ein Nachbarwürfel gefunden
+%\footnote{Da für manche Situationen die meisten Einträge der pending\_list mit acht {\tt if}-Abfragen auf Nachbarschaft oder "`veraltet sein"' geprüft werden, ist ein Performancegewinn durch ein switch denkbar.}
+, so wird die entsprechende Ecke des Nachbarwürfels als der aktuellen Ecke zugehörig markiert. Wird einer der acht Nachbarwürfel nicht gefunden, so wird dieser ebenfalls neu erzeugt. Alle neu erzeugten Würfel werden in die pending\_list aufgenommen und es wird die nächste Ecke abgearbeitet.
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/pendinglist01.eps}
+	\caption{Bevor die Zelle "`neu"' in die Liste der Zellen aufgenommen wird, werden die Zellen "`pending"' auf Nachbarschaft geprüft und gemeinsame Punkte angepasst. Der benötigte Nachbar "`neuer"' fehlt noch und wird deshalb mit "`neu"' erzeugt und als "`pending"' in die Zellliste aufgenommen.}
+	\label{fig:pendinglist01}
+	\end{center}
+\end{figure}
+
+\paragraph{Bemerkung:} Da eine lange pending\_list potentiell zu einer in der Zellanzahl quadratischen Laufzeitordnung führt, wäre es nötig, die Zellsortierung für den MCA an die räumliche Verteilung der Partikel zur Laufzeit anzupassen. Denkbar wäre hier etwa, die Koordinate, die die höchsten Bits im Zellindex liefert, auszutauschen, sobald im letzten Bild die Länge der pending\_list mehr als $\beta\%$ der Eckliste enthielt.
+
+Abb. \ref{fig:pendinglist01} stellt zweidimensional die Entwicklung der Würfelliste dar. Der dunkelgrüne Würfel wird in diesem Fall erzeugt, weil seine obere linke Ecke in der zuvor erzeugten Eckliste stand, also "`innerhalb der Flüssigkeit"' liegt. Beim Durchsuchen der pending\_list (blau) werden der linke Nachbar (Zellindex - 1) und der obere linke Nachbar (Zellindex - Zeilenlänge - 1) gefunden und der erste Würfel der zweiten Zeile (blau gestrichelt) aus der pending\_list entfernt. Bei den zwei gefundenen Nachbarn wird an der entsprechenden Ecke (rote Pfeile) der selbe Verweis auf die aktuelle Ecke gespeichert wie bei dem erzeugten Würfel. Weil nach Durchlaufen der pending\_list feststeht, dass der obere Nachbar (hellgrün) nie erzeugt wurde, wird er jetzt erzeugt und erhält die Eckinformation des aktuellen Würfels. Die beiden grünen Würfel werden der pending\_list angefügt und es wird der nächste Eckeintrag gelesen.
+
+\subsection{Erzeugung der Oberflächenpunkte}
+
+\paragraph{Bezeichnung:} Als Oberflächenpunkt bezeichne ich eine Ecke der gesuchten Oberflächentriangulierung. Als "`Vorwärtsecke"' bezeichne ich die Ecke einer Zelle, die gemäß der Ecksortierung aus Kapitel \ref{eckenbestimmen} den höchsten Index hätte.
+
+Die im letzten Abschnitt erzeugten Würfel würden bereits für einen MCA genügen. Um allerdings die Oberfläche wie in \ref{truform} beschrieben rund darstellen zu können, werden Normalen und damit auch weitere Informationen über die Umgebung der Oberflächenpunkte benötigt.\footnote{Das Deaktivieren der Normalenbestimmung würde die Oberflächenberechnung deutlich beschleunigen, ist aber nicht implementiert.}
+
+Um Nachbarschaften auszuwerten, wird die eben ermittelte Würfelliste sortiert und durchlaufen.
+Als erstes werden, falls benötigt, die Oberflächenpunkte der drei Kanten erzeugt, welche an die "`Vorwärtsecke"' angrenzen. Sie bekommen die Koordinate derjenigen benachbarten Ecke, die innerhalb der Flüssigkeit liegt (nur diese liegt explizit vor), plus einen Offset, der proportional zur dritten Wurzel der für diese Ecke gespeicherten Partikelanzahl ist und bereits berechnet vorliegt (Volumen $\propto$ Partikelanzahl $\propto$ Kantenlänge$^3$). Die Koordinaten in der Liste der Ecken liegen nicht auf den Ecken des zugrunde liegenden regelmäßigen Gitters. Siehe dazu Kapitel \ref{deformier}.
+
+Mit dem Oberflächenvertex wird auch seine Normale in Abhängigkeit von der Eckkonfiguration des aktuellen Würfels erzeugt.
+
+\paragraph{Exkurs:} Auf welchen Kanten Oberflächenpunkte erzeugt werden müssen, hängt davon ab, welche Ecken innerhalb und welche außerhalb der Flüssigkeit liegen. Da diese Information in meinem Programm als 8-Bit-Zahl, nämlich ein Bit pro Ecke, vorliegt, überlegte ich mir, hier an Stelle der sechs {\tt if}-Abfragen einen {\tt switch} auf besagte 8-Bit-Zahl durchzuführen. Diesen Programmteil schrieb ich mit Hilfe der {\tt if}-Abfragen automatisch. Daher sind diese knapp 4000 Zeilen Code auch in einer separaten Datei (siehe auch \ref{dateien}). Ist man nicht an Normalen interessiert, so sind von den 8 Bit nur 4 relevant und die Zeilenanzahl würde sich auf 90 reduzieren. Ich würde einen Performancegewinn erwarten, würde man genau diese Umwandlung vieler {\tt if}s in ein {\tt switch} auch bei der Auswertung der MC-Tabelle anwenden.
+
+Nun wird, wieder mittels einer pending\_list (siehe Kapitel \ref{pendinglist}), die die Indizes der noch als Nachbarn in Frage kommenden Zellen hält, nach Nachbarn gesucht. Wird einer gefunden, so bekommt der aktuelle Würfel an den sich berührenden Kanten den Oberflächenpunktindex des Nachbarwürfels übertragen und die Normalen dieser Punkte werden mit der Eckkonfiguration des aktuellen Würfels angepasst.
+Auf diese Weise werden für jeden Oberflächenpunkt alle Ecken der 4 angrenzenden Würfel berücksichtigt.
+
+Die an und für sich falsche Annahme eines regelmäßigen Gitters mit einer Dichte $\propto$ Partikelanzahl wird hier aus Performancegründen getroffen. Eine für korrekte Normalen benötigte Auswertung des auf den Partikeln gespeicherten Dichtefeldes findet nicht statt.
+
+\subsection{Verbinden der Oberflächenpunkte}
+In der Würfelliste ist nun also sowohl die Eckkonfiguration gespeichert als auch alle relevanten Daten der Oberflächenpunkte. Die Information, welche drei Punkte jeweils zu einem Dreieck verbunden werden, wird nun wie in Kapitel \ref{MCA} aus einer Tabelle gelesen und als Triangulierungsliste gespeichert.
+
+Die Triangulierungsliste ist mit der Liste der Oberflächenpunkte ausreichend, die MC-Oberfläche darzustellen. Um zwischen benachbarten Dreiecken auch mit Lichtberechnung glatte Übergänge zu erhalten ist die Liste der Normalen notwendig. Diese eignet sich aber auch, die Oberfläche runder zu machen. Siehe dazu Kapitel \ref{truform}.
+
+Abb. \ref{fig:MCex01}, \ref{fig:MCex02} und \ref{fig:MCex03} veranschaulichen nochmal in 2D die Vorgehensweise.
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex01.eps}
+	\caption{Die Anzahl der Partikel mit selbem Zellindex wird im Zellmittelpunkt als Ecke für den MCA gespeichert.}
+	\label{fig:MCex01}
+	\end{center}
+\end{figure}
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex02.eps}
+	\caption{Alle Zellen mit Ecken {\em in der Flüssigkeit} werden erzeugt.}
+	\label{fig:MCex02}
+	\end{center}
+\end{figure}
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex03.eps}
+	\caption{Punkte auf Kanten, die aus der Flüssigkeit herausführen, werden als Oberflächenpunkte markiert und verbunden.}
+	\label{fig:MCex03}
+	\end{center}
+\end{figure}
+
+\section{Deformiertes Gitter}
+\label{deformier}
+Ein weiterer Ansatz, die Oberflächentriangulierung näher an die Partikel zu bringen, war es, beim Erzeugen der Ecken für den MCA auch die Schwerpunkte der Partikelpositionen an Stelle der Mittelpunktskoordinaten der Zellen zu speichern. Wie dann der MCA im Zweidimensionalen aussieht, veranschaulichen Abb. \ref{fig:MCex11}, \ref{fig:MCex12} und \ref{fig:MCex13}. Hier wurden die selben Partikelpositionen verwendet wie bei Abb. \ref{fig:MCex01}, \ref{fig:MCex02} und \ref{fig:MCex03}, S. \pageref{fig:MCex01}ff.
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex11.eps}
+	\caption{Schwerpunkt statt Zellmittelpunkt.}
+	\label{fig:MCex11}
+	\end{center}
+\end{figure}
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex12.eps}
+	\caption{Die "`Ecken"' des Marching Cube "`Gitters"'.}
+	\label{fig:MCex12}
+	\end{center}
+\end{figure}
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/MCex13.eps}
+	\caption{Eine natürlichere Hüllkurve.}
+	\label{fig:MCex13}
+	\end{center}
+\end{figure}
+
+Ziel war es, das extrem störende Springen der Oberfläche von einer Gitterposition zur nächsten zu beseitigen. Das ist auch gelungen. Einzelnen Partikeln wird genau eine Ecke zugeordnet, die im Partikelmittelpunkt liegt und wenn sich der Index dieser Zelle ändert sieht man das der Oberfläche nicht an.
+
+Mit dieser Modifikation kann es zur Überschneidung von Hüllkurven kommen. Dies tritt verstärkt dann auf, wenn bereits einzelne Partikel wie in Abb. \ref{fig:ueberschneid} (a) sehr groß dargestellt werden.
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/ueberschneid.eps}
+	\caption{Verschieben des MC-Gitters kann zu Überschneidungen führen.}
+	\label{fig:ueberschneid}
+	\end{center}
+\end{figure}
+Gar wie in Abb. \ref{fig:entartet} (a) dargestellte entartete Flächen entstehen, wenn zugleich Flächen höherer Ordnung (Kapitel \ref{truform}) verwendet werden und die Normalen ungünstig bestimmt werden.
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/entartet.eps}
+	\caption{Entartete Flächen bei schlecht gewählten Normalen.}
+	\label{fig:entartet}
+	\end{center}
+\end{figure}
+Beide Effekte fallen bei meiner Anwendung wahrscheinlich deshalb nicht ins Auge, weil mein Wasser nicht transparent ist.
+\section{Flächen höherer Ordnung}
+\label{truform}
+Die wie im letzten Kapitel erzeugte Oberfläche ist sehr eckig. Ein einzelnes Partikel zum Beispiel wird als Oktaeder dargestellt, da nacheinander das Folgende erzeugt wird:
+\begin{enumerate}
+\item eine Ecke
+\item acht Würfel
+\item sechs Oberflächenpunkte
+\item acht Dreiecke
+\end{enumerate}
+
+Wünschenswert wäre aber eine Kugel, was in meiner Anwendung nicht ganz erreicht wird.
+Ich suchte also einen Algorithmus, der Dreiecke anhand der Normaleninformation verfeinert, dabei aber jede Kante unabhängig von der dritten Ecke des Dreiecks unterteilt. Dies ist notwendig, will man die Verfeinerung ohne Nachbarschaftsinformationen durchführen. Dabei stieß ich auf ATIs TRUFORM-Erweiterung, die laut \cite{ATI} bereits 2001 mit der Radeon 2 Grafikkarte auf Hardware implementiert war.
+Diese Erweiterung erzeugt Dreiecksgitter einer fest vorgegebenen Verfeinerungsstufe mit Gitterpunkten, die auf dem bikubischen Bezier-Patch liegen, das durch das Dreieck und seine Normalen definiert ist. Die Kanten von Bezier-Patches sind die zu den jeweiligen Ecken und ihren Normalen gehörenden Splinekurven. Damit hängt auch eine regelmäßige Unterteilung dieser Kanten nicht von der dritten Ecke ab und die TRUFORM-Flächen auf gleicher Stufe unterteilter benachbarter Dreiecke fügen sich nahtlos aneinander.
+
+Die Normalen der so erzeugten Dreiecke können wahlweise linear oder kubisch interpoliert sein. Warum lineare Interpolation nicht so gute Resultate liefert, soll Abb. \ref{fig:linkub} veranschaulichen. Andererseits benötigt die kubische Interpolation mehr Rechenzeit.
+
+\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics{pix/linkub.eps}
+	\caption{Linear vs. kubisch interpolierte Normalen bei ATIs TRUFORM-Erweiterung.}
+	\label{fig:linkub}
+	\end{center}
+\end{figure}
+In meiner Implementierung schalte ich grundsätzlich die Verfeinerung auf die maximale Stufe (7), da die Erzeugung der Oberflächendreiecke ohnehin weit mehr Zeit in Anspruch nimmt als die Unterteilung aller Dreiecke in 64 Teildreiecke durch eine ATI Radeon 9600. So läuft meine Simulation in manchen Fällen (wenig Physik) mit 5.000 * 64 = 320.000 Dreiecken noch mit 30 Bildern pro Sekunde.
+
+ATI TRUFORM$^\texttt{TM}$ zu verwenden, geht vorerst leider nur unter Windows. Dort erfordert es
+unter DIRECT X und unter Open GL lediglich das Einbinden der ATI-header und Einschalten der Erweiterung.
+
+\paragraph{Bemerkung:} Ein interessantes Thema ist die Frage, ob man ähnlich wie ATI TRUFORM Dreiecke auch mit unterschiedlichen Detailstufen effizient unterteilen kann. So könnte etwa für jede Dreiecksseite, die ja bei benachbarten Dreiecken übereinstimmen, abhängig vom Viewport eine Unterteilungsstufe festgelegt werden, um anschließend das Dreieck zu unterteilen.
+
+\section{Verfeinerung des Gitters}
+\label{verfeinertesgitter}
+In den meisten Anwendungen führt ein verfeinertes Gitter für den MCA auch zu einer verbesserten Approximation der gesuchten Isofläche.
+Um zu testen, ob bei meinem Verfahren auch eine Verbesserung zu erzielen ist, führte ich zu den vier sortierten Listen der Partikel (siehe Kapitel \ref{KOL}) eine Fünfte ein, die nach einem Gitter mit halber Maschenweite sortiert war.
+
+Da aber der ab Kapitel \ref{eckenbestimmen} beschriebene Ansatz jedes Partikel nur einer Ecke zuordnet und kein Höhenfeld um Partikel ausgewertet wird, zeigte die Verfeinerung des Gitters keine signifikante Verbesserung des Ergebnisses. Die Artefakte wurden zwar kleiner, aber wahrscheinlich auch häufiger. Eventuell hat die Verfeinerung den positiven Effekt, dass Partikel seltener verbunden dargestellt werden, solange ihr Abstand zueinander größer ist als der Interaktionsradius.

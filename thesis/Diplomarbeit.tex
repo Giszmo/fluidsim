@@ -1,0 +1,153 @@
+
+\documentclass[12pt,a4paper,titlepage,oneside]{report}
+%\errorcontextlines=1000
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsopn}
+\usepackage{amssymb}  % ermoeglicht u.a. $\frak{}$
+\usepackage{mythm}    % anstelle von amsthm wegen neuem Theoremstil `fact'
+\usepackage{amscd}
+\usepackage{german}
+\usepackage{graphics}
+\usepackage[final]{graphicx}
+\usepackage{graphpap} % um beim Zeichnen ein Raster zu sehen
+\usepackage{ifthen}   % ermoeglicht \ifthenelse{}{}{}
+\usepackage{makeidx}
+\usepackage{umlaut}  	% Eingabe von Umlauten als ï¿½ï¿½,ï¿½
+\usepackage{epic}  	% Enhancement to Picture Environments
+\usepackage{psfig}  	% Import von ps/eps-Dateien mit\psfig{file=...}
+\usepackage{parskip}  	% statt Einruecken von Absï¿½zen Zeilenvorschub
+
+\textwidth13.5cm
+\hoffset0.2cm
+\textheight22.5cm
+\voffset-0.5cm
+%\parindent0em
+%\parskip1ex
+\makeindex
+\frenchspacing                   % Leerzeichen verschieden breit :-)
+\sloppy                          % mehr Trennungen erlauben ...
+\hbadness = 10000
+\begin{document}
+
+  \bibliographystyle{alpha}      % Stil fuer Literaturzitate
+  % \setcounter{tocdepth}{4}     % auf Wunsch bis zu 4 Ebenen im
+  % \setcounter{secnumdepth}{4}  % Inhaltsverzeichnis!
+
+  \psfull                       % ps/eps-Dateien wirklich importieren?
+  %\psdraft                      % Oder nur die BoundingBox benutzen?
+  %\pssilent                     % keine Meldungen ueber ps/eps-Import
+
+  \fboxsep 0mm                   % kein Abstand zwischen Rahmen und Bild?
+
+	\begin{titlepage}
+		\large
+		\begin{center}
+		\begin{figure}[h]
+			\begin{center}
+			\includegraphics{pix/TUMs.eps}
+			\end{center}
+		\end{figure}
+		Technische Universit"at M"unchen\\
+		\vspace{0.1cm}
+		Fakult"at f"ur Mathematik\\
+		\vspace{4cm}
+		\LARGE
+		\textbf{Partikelbasierte Fluidsimulation f"ur\\
+				interaktive Anwendungen\\
+		}
+		\vspace{1.6cm}
+		\large
+		Diplomarbeit von Leo Wandersleb\\
+		\vspace{8.5cm}
+		\large
+		\begin{tabular}{ll}
+		Aufgabensteller: & Prof. Dr. Thomas Huckle\\
+		Betreuer: & Prof. Dr. R"udiger Westermann\\
+		Abgabetermin: & 17. Januar 2005\\
+		\end{tabular}
+		\end{center}
+	\end{titlepage}
+	\pagestyle{empty}
+	\cleardoublepage
+	\hfill\\
+	\vspace{18cm}
+	\hfill\\
+	\normalsize
+	Hiermit erkl"are ich, die Diplomarbeit selbst"andig und nur mit den angegebenen Hilfsmitteln angefertigt zu haben.
+
+	\vspace{1cm}
+
+	München, den 16. Januar 2005
+
+	\hfill
+	(Leo Wandersleb)
+
+	\cleardoublepage
+	\input{Abstract}
+
+	\cleardoublepage
+	\setcounter{page}{1}           % ab hier Seitennumerierung mit 1
+	\pagestyle{plain}
+
+	\tableofcontents
+	\cleardoublepage
+
+	\input{Einleitung}
+	\input{Physik}
+	\input{Kollisionsdetektion}
+	\input{Visualisierung}
+	\input{Anwendung}
+	\input{Ausblick}
+
+	\begin{center}
+		\begin{picture}(300,80)
+			%\put(0,0){\framebox(300,80){}}
+			%\graphpaper[10](0,0)(300,80)
+			\qbezier(70,45)(40,45)(40,30)
+			\qbezier(40,30)(40,15)(80,15)
+			\qbezier(80,15)(100,15)(150,30)
+			\qbezier(150,30)(200,45),(220,45)
+			\qbezier(220,45)(260,45),(260,30)
+			\qbezier(260,30)(260,15),(230,15)
+		\end{picture}
+	\end{center}
+
+	\begin{thebibliography}{66}
+		\bibitem{FOFE} Nick Foster \& Ronald Fedkiw:\\
+		\newblock {\em "`Practical animation of liquids"'},\\
+		\newblock Proceedings of ACM SIGGRAPH 2001.
+
+		\bibitem{ETHZ} Matthias M"uller, David Charypar \& Markus Gross:\\
+		\newblock {\em "`Particle-Based Fluid Simulation for Interactive Applications"'},\\
+		\newblock Department Institute of Technology Z"urich (ETHZ), Schweiz, 2003.
+
+		\bibitem{MC} Paul Bourke:\\
+		\newblock {\em "`Polygonising a scalar field"'},\\
+		\newblock http://astronomy.swin.edu.au/pbourke/modelling/polygonise/, 2003.
+
+		\bibitem{ATI} http://www.ati.com
+
+		\bibitem{NSG} http://scienceworld.wolfram.com/physics/Navier-StokesEquations.html
+
+		\bibitem{UTAH} Simon Premo\v{z}e, Tolga Tasdizen, James Bigler, Aaron Lefohn \& Ross T. Whitaker:\\
+		\newblock {\em "`Particle-Based Simulation of Fluids"'},\\
+		\newblock University of Utah, 2003.
+
+		\bibitem{SPH} Olaf Kessel-Deynet:\\
+		\newblock {\em "`Berücksichtigung ionisierender Strahlung im Smoothed-Particle-Hydrodynamics-Verfahren und Anwendung auf die Dynamik von Wolkenkernen im Strahlungsfeld massiver Sterne"'},\\
+		\newblock Ruprecht-Karls-Universität Heidelberg, 1999.
+	\end{thebibliography}
+	\addcontentsline{toc}{chapter}{Literaturverzeichnis}
+	%*******************************************************************
+	% Abbildungsverzeichnis
+	%*******************************************************************
+	%\addcontentsline{toc}{chapter}{Abbildungsverzeichnis}
+	%\listoffigures
+	%\cleardoublepage
+
+%	\bibliography{bib.bib}   % verwendete bib-Dateien fuer die
+ % \bibliography{Literatur}       % Generierung des Literaturverzeichnisses
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

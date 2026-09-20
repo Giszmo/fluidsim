@@ -1,0 +1,105 @@
+\chapter{Physikalische Grundlagen}
+\label{Physik}
+Grunds"atzlich gibt es zwei Ansätze, Physik von Wasser zu berechnen.
+\begin{itemize}
+	\item Auf einem festen Gitter, was sich empfiehlt, wenn im Wesentlichen alle Gitterpunkte innerhalb des simulierten Mediums sind, also zum Ergebnis beitragen.
+	\item Auf Punkten, die sich mit dem Geschwindigkeitsfeld mit bewegen ({\sc Lagrange}'scher Formalismus), was vorzuziehen ist, wenn die Verteilung des Mediums im Raum nicht a priori bekannt ist bzw. sehr stark variiert (Spritzeffekte, Regen, ...).
+\end{itemize}
+
+Doch bevor hierauf näher eingegangen wird, werden Gleichungen benötigt, die Fluiddynamik beschreiben.
+
+\section{{\sc Navier-Stokes-}Gleichungen}
+Schon Anfang des 19ten Jahrhunderts entwickelten der Franzose Navier und der Brite Stokes ein Gleichungssystem, um das Verhalten von Flüssigkeiten zu beschreiben. Dabei werden Viskosität, Druck, Körperkräfte sowie Massen- und Impulserhaltung berücksichtigt.
+
+Die Viskositätskraft
+\begin{equation*}
+	\label{visc}
+	\frac{\vec{F}_{\mbox{Viskosität}}}{V} = \eta \nabla ^2 \vec{v},
+\end{equation*}
+die proportional zur Viskosität  $\eta$ in Richtung der Geschwindigkeitsänderung wirkt, die Druckkraft
+\begin{equation*}
+	\label{druck}
+	\frac{\vec{F}_{\mbox{Druck}}}{V} = - \nabla P,
+\end{equation*}
+die entgegen dem Druckgradienten, also in Richtung des größten Druckabfalls wirkt, und eine sogenannte Körperkraft
+\begin{equation*}
+	\label{aussen}
+	\frac{\vec{F}_{\mbox{Körper}}}{V} = F,
+\end{equation*}
+wie zum Beispiel die Gravitationskraft ergeben mit dem Impuls $\vec{p}$ und
+\begin{equation*}
+	\label{newton}
+	\frac{\vec{F}}{V} = \frac{1}{V}\frac{d\vec{p}}{dt} = \rho \frac{D\vec{v}}{Dt} = \rho \frac{\partial\vec{v}}{\partial t} + \rho \vec{v} \cdot \nabla \vec{v}
+\end{equation*}
+(Newtons Gesetz der Fluiddynamik) die Gleichung
+\begin{equation*}
+	\rho\frac{\partial\vec{v}}{\partial t} + \rho \vec{v} \cdot \nabla \vec{v} = F - \nabla p + \eta \nabla^2 \vec{v}.
+\end{equation*}
+Teilt man nun durch $\rho$, so erhält man
+\begin{equation}
+	\label{ns1}
+	\frac{\partial\vec{v}}{\partial t} + \vec{v} \cdot \nabla \vec{v} = \frac{F}{\rho} - \frac{\nabla p}{\rho} + \nu \nabla^2 \vec{v},
+\end{equation}
+wobei $\nu = \frac{\eta}{\rho}$ als kinematische Viskosität bezeichnet wird.
+
+Gleichung \ref{ns1} und die Kontinuitätsgleichung
+\begin{equation}
+	\label{ns2}
+	\frac{\partial \rho}{\partial t} =
+		- \nabla (\rho \cdot \vec{v}) =
+		- \vec{v} \cdot \underbrace{\nabla \rho}_{=0} - \rho \nabla \cdot \vec{v} = - \rho \nabla \cdot \vec{v}
+\end{equation}
+werden zusammen als {\sc Navier-Stokes}-Gleichungen bezeichnet.
+
+Die Kontinuitätsgleichung unter Annahme der Inkompressibilität (Gleichung \ref{ns2}) beschreibt in Worten, dass die Änderung der Dichte proportional zum Negativen der Divergenz des Geschwindigkeitsfeldes, also zum Zufluss ist. Ein positiver Zufluss bedeutet ein Steigen der Dichte.
+
+Diese Einführung zu den {\sc Navier-Stokes} Gleichungen und weiterführende Links finden sich bei \cite{NSG}.
+
+Die vorliegende Arbeit verwendet den {\sc Lagrange}'schen Formalismus, wodurch sich, wie in \cite{ETHZ} beschrieben, einige Vereinfachungen ergeben. So kann die für den Massenerhalt zuständige Gleichung \ref{ns2} ganz weggelassen werden, da die Masse auf Partikeln gespeichert ohnehin konstant bleibt.
+
+Da sich die Partikel mit der Flüssigkeit bewegen, wird auch der konvektive Term aus Gleichung \ref{ns1} nicht benötigt, und die linke Seite von Gleichung \ref{ns1} ist nur noch die Zeitableitung der Geschwindigkeit $d\vec{v}/d t$. Mit der Kraft
+\begin{equation}
+	\label{einfach}
+	f = F - \nabla p + \nu \nabla^2 \vec{v}
+\end{equation}
+ergibt sich als Beschleunigung $\vec{a}$ für das $i$-te Partikel
+\begin{equation}
+	\label{nspar}
+	\vec{a}_i = \frac{d\vec{v}_i}{dt}=\frac{f_i}{\rho_i}.
+\end{equation}
+Um diese Gleichungen aber numerisch zu lösen, also insbesondere die physikalischen Größen im Raum zu bestimmen, wird hier Smoothed Particle Hydrodynamics (SPH) verwendet.
+
+\section{Smoothed Particle Hydrodynamics}
+\label{SPH}
+
+Im SPH-Formalismus wird die Verteilung einer physikalischen Größe $u$ im Raum durch Glätten der auf Partikelpositionen gespeicherten Werte $\langle u \rangle$ approximiert.
+\begin{equation*}
+	\label{smoothing}
+	\langle u (\vec{x})\rangle = \int_V u(\vec{x})W(\vec{x}-\vec{x}',h)dV
+\end{equation*}
+
+Dabei muss der Glättungskern $W(\vec{x}-\vec{x}',h)$ normiert sein, also
+\begin{equation}
+	\label{eq:normiert}
+	\int_V W(\vec{x}-\vec{x}',h) dV = 1
+\end{equation}
+gelten, und unter Verwendung einer Glättungslänge $h \rightarrow 0$ muss der geglättete Wert $\langle u (\vec{x})\rangle$ gegen $u (\vec{x})$ gehen.
+\begin{equation}
+	\label{eq:limit}
+	h \rightarrow 0 \Rightarrow \langle u (\vec{x})\rangle \rightarrow u (\vec{x})
+\end{equation}
+\paragraph{Notation:}In späteren Kapiteln ist von {\em Partikelradius}, {\em Interaktionsradius} oder kurz {\em Radius} die Rede. Damit ist immer die dann für alle Partikel und Glättungskerne konstante {\em Glättungslänge} gemeint.
+
+Mit Hilfe dieser Glättungskerne kann nun $u$ an jedem Punkt im Raum als Summe über alle geglätteten Partikel bestimmt werden.
+Dieser Wert ist im Allgemeinen nicht exakt, aber Olaf Kessel-Deynet zeigt in \cite{SPH}, dass es schon genügt, zusätzlich zu den Gleichungen \ref{eq:normiert} und \ref{eq:limit} zu verlangen, dass $W$ gerade ($W(\vec{x},h)=W(-\vec{x},h)$) ist, um eine in $h$ quadratische Fehlerordnung zu erhalten.
+
+\begin{equation*}
+	\langle u(\vec{x}) \rangle = \sum_i \frac{m_i}{\rho(\vec{x}_i)} u(\vec{x}_i) W(\vert\vec{x}-\vec{x}_i\vert, h),
+\end{equation*}
+
+wobei $m_i, \rho(\vec{x}_i)$ und $u(\vec{x}_i)$ die entsprechenden Größen am $i$-ten SPH-Partikel sind.
+
+SPH ist durch die Möglichkeit der freien Platzierung von Partikeln im Simulationsgebiet speziell geeignet, Prozesse, die sich auf einem komplizierten räumlichen Gebiet abspielen, zu simulieren, da die Partikel zum Zweck erh"ohter Genauigkeit in relevanten Bereichen lokal dichter und in anderen, die nur geringen oder gar keinen Einfluss auf die Simulation haben, auch gar nicht platziert werden können.
+Auch ist eine Neuplatzierung dieser Partikel für jeden Zeitschritt meist sinnvoll. So eben auch bei der Simulation von Wasser. In meiner Arbeit transportiere ich die Partikelposition schlicht mit der Geschwindigkeit des Wassers. Andere Ansätze, die dies lediglich als erste Approximation wählen, werden zum Beispiel in \cite{UTAH} verwendet.
+
+In dieser Arbeit wird das Gleichungssystem \ref{nspar} gelöst, indem in einem ersten Durchlauf für jedes Partikel die Dichte $\rho$ als Summe der geglätteten Dichten aller Partikel bestimmt wird und in einem zweiten Durchlauf die von $\rho$ abhängigen geglätteten Kräfte aufsummiert werden. Da die Glättungslänge $h$ klein ist, muss nicht über alle Partikel summiert werden, sondern nur über Partikel in der jeweiligen $h$-Umgebung. Um das zu optimieren, wird eine effiziente Kollisionsdetektion benötigt.

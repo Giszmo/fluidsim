@@ -1,0 +1,62 @@
+\contentsline {chapter}{\numberline {1}Einf\"uhrung}{3}
+\contentsline {section}{\numberline {1.1}Zweck und Aufbau dieser Diplomarbeit}{4}
+\contentsline {chapter}{\numberline {2}Physikalische Grundlagen}{5}
+\contentsline {section}{\numberline {2.1}{\sc Navier-Stokes-}Gleichungen}{5}
+\contentsline {section}{\numberline {2.2}Smoothed Particle Hydrodynamics}{7}
+\contentsline {paragraph}{Notation:}{7}
+\contentsline {chapter}{\numberline {3}Kollisionsdetektion}{9}
+\contentsline {section}{\numberline {3.1}Explizite Raumpartitionierung}{9}
+\contentsline {paragraph}{Exkurs (Jedem Partikel seine Zelle):}{10}
+\contentsline {section}{\numberline {3.2}Implizite Raumpartitionierung}{11}
+\contentsline {paragraph}{Exkurs:}{12}
+\contentsline {subsection}{\numberline {3.2.1}Fl\"ussigkeitspartikel}{13}
+\contentsline {subsection}{\numberline {3.2.2}Kontrollpartikel}{13}
+\contentsline {paragraph}{Bemerkung:}{14}
+\contentsline {chapter}{\numberline {4}Visualisierung}{15}
+\contentsline {section}{\numberline {4.1}Der Marching Cube Algorithmus}{16}
+\contentsline {paragraph}{Bemerkung:}{16}
+\contentsline {section}{\numberline {4.2}A grid to march on}{17}
+\contentsline {subsection}{\numberline {4.2.1}Ecken bestimmen}{17}
+\contentsline {paragraph}{Bemerkung:}{17}
+\contentsline {subsection}{\numberline {4.2.2}Gitterzellen zu den Ecken}{17}
+\contentsline {paragraph}{Einschub:}{18}
+\contentsline {paragraph}{Bemerkung:}{18}
+\contentsline {subsection}{\numberline {4.2.3}Erzeugung der Oberfl\"achenpunkte}{19}
+\contentsline {paragraph}{Bezeichnung:}{19}
+\contentsline {paragraph}{Exkurs:}{19}
+\contentsline {subsection}{\numberline {4.2.4}Verbinden der Oberfl\"achenpunkte}{20}
+\contentsline {section}{\numberline {4.3}Deformiertes Gitter}{21}
+\contentsline {section}{\numberline {4.4}Fl\"achen h\"oherer Ordnung}{21}
+\contentsline {paragraph}{Bemerkung:}{23}
+\contentsline {section}{\numberline {4.5}Verfeinerung des Gitters}{23}
+\contentsline {chapter}{\numberline {5}Anwendung}{24}
+\contentsline {section}{\numberline {5.1}Systemvoraussetzungen}{24}
+\contentsline {section}{\numberline {5.2}Ben\"otigte Dateien}{25}
+\contentsline {section}{\numberline {5.3}Notation}{25}
+\contentsline {section}{\numberline {5.4}Public member von {\tt Fluid}}{26}
+\contentsline {subsection}{\numberline {5.4.1}Konstruktor}{26}
+\contentsline {subsection}{\numberline {5.4.2}trianglelist2boundary}{27}
+\contentsline {subsection}{\numberline {5.4.3}trianglelist2teleport}{27}
+\contentsline {subsection}{\numberline {5.4.4}trianglelist2shift}{28}
+\contentsline {subsection}{\numberline {5.4.5}trianglelist2setspeed}{29}
+\contentsline {subsection}{\numberline {5.4.6}tetraederlist2liquid}{29}
+\contentsline {subsection}{\numberline {5.4.7}progress}{30}
+\contentsline {subsection}{\numberline {5.4.8}movingparticlecount}{30}
+\contentsline {subsection}{\numberline {5.4.9}boundaryparticlecount}{30}
+\contentsline {subsection}{\numberline {5.4.10}particlecount}{31}
+\contentsline {subsection}{\numberline {5.4.11}get\_particlearray}{31}
+\contentsline {subsection}{\numberline {5.4.12}get\_surfacegrid}{31}
+\contentsline {subsection}{\numberline {5.4.13}set\_height\_function}{32}
+\contentsline {subsection}{\numberline {5.4.14}set\_height\_function\_normal}{33}
+\contentsline {subsection}{\numberline {5.4.15}height\_function}{33}
+\contentsline {subsection}{\numberline {5.4.16}height\_function\_normal}{33}
+\contentsline {subsection}{\numberline {5.4.17}minxyz}{33}
+\contentsline {subsection}{\numberline {5.4.18}maxxyz}{34}
+\contentsline {subsection}{\numberline {5.4.19}particleradius}{34}
+\contentsline {section}{\numberline {5.5}Die Beispielimplementierung}{34}
+\contentsline {subsection}{\numberline {5.5.1}Programmstart}{34}
+\contentsline {subsection}{\numberline {5.5.2}Tastaturbelegung}{34}
+\contentsline {chapter}{\numberline {6}Resultate}{36}
+\contentsline {chapter}{\numberline {7}Ausblick}{39}
+\contentsline {chapter}{\numberline {8}Danksagung}{40}
+\contentsline {chapter}{Literaturverzeichnis}{41}

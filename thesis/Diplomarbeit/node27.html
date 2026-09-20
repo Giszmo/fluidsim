@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Exkurs:</TITLE>
+<META NAME="description" CONTENT="Exkurs:">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="previous" HREF="node26.html">
+<LINK REL="up" HREF="node25.html">
+<LINK REL="next" HREF="node28.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html479"
+  HREF="node28.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html475"
+  HREF="node25.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html471"
+  HREF="node26.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html477"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html480"
+  HREF="node28.html">Verbinden der Oberflächenpunkte</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html476"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html472"
+  HREF="node26.html">Bezeichnung:</A>
+ &nbsp; <B>  <A NAME="tex2html478"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H4><A NAME="SECTION00523020000000000000">
+Exkurs:</A>
+</H4> Auf welchen Kanten Oberflächenpunkte erzeugt werden müssen, hängt davon ab, welche Ecken innerhalb und welche außerhalb der Flüssigkeit liegen. Da diese Information in meinem Programm als 8-Bit-Zahl, nämlich ein Bit pro Ecke, vorliegt, überlegte ich mir, hier an Stelle der sechs <TT>if</TT>-Abfragen einen <TT>switch</TT> auf besagte 8-Bit-Zahl durchzuführen. Diesen Programmteil schrieb ich mit Hilfe der <TT>if</TT>-Abfragen automatisch. Daher sind diese knapp 4000 Zeilen Code auch in einer separaten Datei (siehe auch <A HREF="node35.html#dateien">5.2</A>). Ist man nicht an Normalen interessiert, so sind von den 8 Bit nur 4 relevant und die Zeilenanzahl würde sich auf 90 reduzieren. Ich würde einen Performancegewinn erwarten, würde man genau diese Umwandlung vieler <TT>if</TT>s in ein <TT>switch</TT> auch bei der Auswertung der MC-Tabelle anwenden.
+
+<P>
+Nun wird, wieder mittels einer pending_list (siehe Kapitel <A HREF="node22.html#pendinglist">4.2.2</A>), die die Indizes der noch als Nachbarn in Frage kommenden Zellen hält, nach Nachbarn gesucht. Wird einer gefunden, so bekommt der aktuelle Würfel an den sich berührenden Kanten den Oberflächenpunktindex des Nachbarwürfels übertragen und die Normalen dieser Punkte werden mit der Eckkonfiguration des aktuellen Würfels angepasst.
+Auf diese Weise werden für jeden Oberflächenpunkt alle Ecken der 4 angrenzenden Würfel berücksichtigt.
+
+<P>
+Die an und für sich falsche Annahme eines regelmäßigen Gitters mit einer Dichte <SPAN CLASS="MATH"><IMG
+ WIDTH="19" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img103.png"
+ ALT="$ \propto$"></SPAN> Partikelanzahl wird hier aus Performancegründen getroffen. Eine für korrekte Normalen benötigte Auswertung des auf den Partikeln gespeicherten Dichtefeldes findet nicht statt.
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html479"
+  HREF="node28.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html475"
+  HREF="node25.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html471"
+  HREF="node26.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html477"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html480"
+  HREF="node28.html">Verbinden der Oberflächenpunkte</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html476"
+  HREF="node25.html">Erzeugung der Oberflächenpunkte</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html472"
+  HREF="node26.html">Bezeichnung:</A>
+ &nbsp; <B>  <A NAME="tex2html478"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

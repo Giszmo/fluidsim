@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>trianglelist2shift</TITLE>
+<META NAME="description" CONTENT="trianglelist2shift">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node42.html">
+<LINK REL="previous" HREF="node40.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node42.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html687"
+  HREF="node42.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html683"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html677"
+  HREF="node40.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html685"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html688"
+  HREF="node42.html">trianglelist2setspeed</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html684"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html678"
+  HREF="node40.html">trianglelist2teleport</A>
+ &nbsp; <B>  <A NAME="tex2html686"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00644000000000000000"></A>
+<A NAME="trianglelist2shift"></A>
+<BR>
+trianglelist2shift
+</H2>
+
+<P>
+<TT>void Fluid::trianglelist2shift(float shift_x, float shift_y, float shift_z, float * trianglelist, unsigned int firsttriangleid, unsigned int lasttriangleid)</TT>
+
+<P>
+Ähnlich wie bei <TT>trianglelist2teleport</TT> (<A HREF="node40.html#trianglelist2teleport">5.4.3</A>) wird hier jedes Fluidpartikel, das mit einem der Begrenzungsdreiecke kollidiert, d.h. in dessen aktiven Bereich gelangt, im Raum verschoben.
+Da das Ziel dieser Verschiebung aber eine echte Ausdehnung hat, und zwar die Selbe wie ihr Ursprung, kommt es hier nicht allein aus der Verschiebung zu Instabilität, solange die Flüssigkeit am Ziel zügig abfließen kann.
+Die Idee hinter dieser Funktion ist, dass Flüssigkeit, die sich im Innern eines Rohres befindet, nicht berechnet werden muß. Liegt das Ziel dieses Shifts allerdings in einem Bereich, wo die Flüssigkeit nicht von alleine abfließt, wird auch hier ein SetSpeed (<A HREF="node42.html#trianglelist2setspeed">5.4.5</A>) benötigt, um zu vermeiden, daß Flüssigkeitspartikel an die Position anderer Partikel verschoben werden.
+
+<P>
+Nähere Informationen zu Kontrollpartikeln finden sich auch in Kapitel <A HREF="node14.html#Kontrollpartikel">3.2.2</A>.
+
+<P>
+
+<UL>
+<LI><TT>float shift_x, float shift_y, float shift_z</TT>
+<BR>		(<TT>shift_x, shift_y, shift_z</TT>)<SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="21" ALIGN="BOTTOM" BORDER="0"
+ SRC="img140.png"
+ ALT="$ ^T$"></SPAN> ist der Vektor, um den die Flüssigkeit verschoben werden soll.
+</LI>
+<LI><TT>float * trianglelist</TT>
+<BR>
+Liste von Dreieckskoordinaten wie bei <TT>trianglelist2boundary</TT> (<A HREF="node39.html#trianglelist2boundary">5.4.2</A>)
+</LI>
+<LI><TT>unsigned int firsttriangleid, unsigned int lasttriangleid</TT>
+<BR>
+Die Liste von Dreieckskoordinaten wird nur von <!-- MATH
+ $Dreieck_{\tt firsttriangleid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="173" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img137.png"
+ ALT="$ Dreieck_{\tt firsttriangleid}$"></SPAN> bis <!-- MATH
+ $Dreieck_{\tt lasttriangleid}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="167" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img138.png"
+ ALT="$ Dreieck_{\tt lasttriangleid}$"></SPAN> verwendet.
+<BR>		<!-- MATH
+ $0 \le {\tt firsttriangleid} < {\tt lasttriangleid} \le n$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="386" HEIGHT="33" ALIGN="MIDDLE" BORDER="0"
+ SRC="img139.png"
+ ALT="$ 0 \le {\tt firsttriangleid} &lt; {\tt lasttriangleid} \le n$"></SPAN>
+</LI>
+</UL>
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html687"
+  HREF="node42.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html683"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html677"
+  HREF="node40.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html685"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html688"
+  HREF="node42.html">trianglelist2setspeed</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html684"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html678"
+  HREF="node40.html">trianglelist2teleport</A>
+ &nbsp; <B>  <A NAME="tex2html686"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

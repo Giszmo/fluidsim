@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Deformiertes Gitter</TITLE>
+<META NAME="description" CONTENT="Deformiertes Gitter">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node30.html">
+<LINK REL="previous" HREF="node19.html">
+<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node30.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html501"
+  HREF="node30.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html497"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html491"
+  HREF="node28.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html499"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html502"
+  HREF="node30.html">Flächen höherer Ordnung</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html498"
+  HREF="node16.html">Visualisierung</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html492"
+  HREF="node28.html">Verbinden der Oberflächenpunkte</A>
+ &nbsp; <B>  <A NAME="tex2html500"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00530000000000000000"></A>
+<A NAME="deformier"></A>
+<BR>
+Deformiertes Gitter
+</H1>
+Ein weiterer Ansatz, die Oberflächentriangulierung näher an die Partikel zu bringen, war es, beim Erzeugen der Ecken für den MCA auch die Schwerpunkte der Partikelpositionen an Stelle der Mittelpunktskoordinaten der Zellen zu speichern. Wie dann der MCA im Zweidimensionalen aussieht, veranschaulichen Abb. <A HREF="#fig:MCex11">4.7</A>, <A HREF="#fig:MCex12">4.8</A> und <A HREF="#fig:MCex13">4.9</A>. Hier wurden die selben Partikelpositionen verwendet wie bei Abb. <A HREF="node28.html#fig:MCex01">4.4</A>, <A HREF="node28.html#fig:MCex02">4.5</A> und <A HREF="node28.html#fig:MCex03">4.6</A>, S. <A HREF="node28.html#fig:MCex01"><IMG  ALIGN="BOTTOM" BORDER="1" ALT="[*]"
+ SRC="/usr/share/latex2html/icons/crossref.png"></A>ff.
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex11"></A><A NAME="748"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung 4.7:</STRONG>
+Schwerpunkt statt Zellmittelpunkt.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img108.png"
+ ALT="\includegraphics{pix/MCex11.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex12"></A><A NAME="755"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Die ,,Ecken`` des Marching Cube ,,Gitters``.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img109.png"
+ ALT="\includegraphics{pix/MCex12.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<DIV ALIGN="CENTER"><A NAME="fig:MCex13"></A><A NAME="762"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Eine natürlichere Hüllkurve.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="407" ALIGN="BOTTOM" BORDER="0"
+ SRC="img110.png"
+ ALT="\includegraphics{pix/MCex13.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+Ziel war es, das extrem störende Springen der Oberfläche von einer Gitterposition zur nächsten zu beseitigen. Das ist auch gelungen. Einzelnen Partikeln wird genau eine Ecke zugeordnet, die im Partikelmittelpunkt liegt und wenn sich der Index dieser Zelle ändert sieht man das der Oberfläche nicht an.
+
+<P>
+Mit dieser Modifikation kann es zur Überschneidung von Hüllkurven kommen. Dies tritt verstärkt dann auf, wenn bereits einzelne Partikel wie in Abb. <A HREF="#fig:ueberschneid">4.10</A> (a) sehr groß dargestellt werden.
+
+<DIV ALIGN="CENTER"><A NAME="fig:ueberschneid"></A><A NAME="770"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Verschieben des MC-Gitters kann zu Überschneidungen führen.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="407" HEIGHT="226" ALIGN="BOTTOM" BORDER="0"
+ SRC="img111.png"
+ ALT="\includegraphics{pix/ueberschneid.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+Gar wie in Abb. <A HREF="#fig:entartet">4.11</A> (a) dargestellte entartete Flächen entstehen, wenn zugleich Flächen höherer Ordnung (Kapitel <A HREF="node30.html#truform">4.4</A>) verwendet werden und die Normalen ungünstig bestimmt werden.
+
+<DIV ALIGN="CENTER"><A NAME="fig:entartet"></A><A NAME="779"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Abbildung:</STRONG>
+Entartete Flächen bei schlecht gewählten Normalen.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="510" HEIGHT="143" ALIGN="BOTTOM" BORDER="0"
+ SRC="img112.png"
+ ALT="\includegraphics{pix/entartet.eps}">
+	
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+Beide Effekte fallen bei meiner Anwendung wahrscheinlich deshalb nicht ins Auge, weil mein Wasser nicht transparent ist.
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html501"
+  HREF="node30.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html497"
+  HREF="node16.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html491"
+  HREF="node28.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html499"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html502"
+  HREF="node30.html">Flächen höherer Ordnung</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html498"
+  HREF="node16.html">Visualisierung</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html492"
+  HREF="node28.html">Verbinden der Oberflächenpunkte</A>
+ &nbsp; <B>  <A NAME="tex2html500"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

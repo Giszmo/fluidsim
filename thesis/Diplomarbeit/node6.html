@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Smoothed Particle Hydrodynamics</TITLE>
+<META NAME="description" CONTENT="Smoothed Particle Hydrodynamics">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="previous" HREF="node5.html">
+<LINK REL="up" HREF="node4.html">
+<LINK REL="next" HREF="node7.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html202"
+  HREF="node7.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html198"
+  HREF="node4.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html194"
+  HREF="node5.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html200"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html203"
+  HREF="node7.html">Notation:</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html199"
+  HREF="node4.html">Physikalische Grundlagen</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html195"
+  HREF="node5.html">NAVIER-STOKES-Gleichungen</A>
+ &nbsp; <B>  <A NAME="tex2html201"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00320000000000000000"></A>
+<A NAME="SPH"></A>
+<BR>
+Smoothed Particle Hydrodynamics
+</H1>
+
+<P>
+Im SPH-Formalismus wird die Verteilung einer physikalischen Größe <SPAN CLASS="MATH"><IMG
+ WIDTH="15" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img22.png"
+ ALT="$ u$"></SPAN> im Raum durch Glätten der auf Partikelpositionen gespeicherten Werte <!-- MATH
+ $\langle u \rangle$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="30" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img23.png"
+ ALT="$ \langle u \rangle$"></SPAN> approximiert.
+<P></P>
+<DIV ALIGN="CENTER" CLASS="mathdisplay"><A NAME="smoothing"></A><!-- MATH
+ \begin{equation*}
+\langle u (\vec{x})\rangle = \int_V u(\vec{x})W(\vec{x}-\vec{x}',h)dV
+\end{equation*}
+ -->
+<TABLE CLASS="equation*" CELLPADDING="0" WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE">
+<TD NOWRAP ALIGN="CENTER"><SPAN CLASS="MATH"><IMG
+ WIDTH="269" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
+ SRC="img24.png"
+ ALT="$\displaystyle \langle u (\vec{x})\rangle = \int_V u(\vec{x})W(\vec{x}-\vec{x}',h)dV$"></SPAN></TD>
+<TD NOWRAP CLASS="eqno" WIDTH="10" ALIGN="RIGHT">
+&nbsp;&nbsp;&nbsp;</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL"><P></P>
+
+<P>
+Dabei muss der Glättungskern <!-- MATH
+ $W(\vec{x}-\vec{x}',h)$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="108" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img25.png"
+ ALT="$ W(\vec{x}-\vec{x}',h)$"></SPAN> normiert sein, also
+<P></P>
+<DIV ALIGN="CENTER" CLASS="mathdisplay"><A NAME="eq:normiert"></A><!-- MATH
+ \begin{equation}
+\int_V W(\vec{x}-\vec{x}',h) dV = 1
+\end{equation}
+ -->
+<TABLE CLASS="equation" CELLPADDING="0" WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE">
+<TD NOWRAP ALIGN="CENTER"><SPAN CLASS="MATH"><IMG
+ WIDTH="192" HEIGHT="61" ALIGN="MIDDLE" BORDER="0"
+ SRC="img26.png"
+ ALT="$\displaystyle \int_V W(\vec{x}-\vec{x}',h) dV = 1$"></SPAN></TD>
+<TD NOWRAP CLASS="eqno" WIDTH="10" ALIGN="RIGHT">
+(<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">5</SPAN>)</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL"><P></P>
+gelten, und unter Verwendung einer Glättungslänge <!-- MATH
+ $h \rightarrow 0$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="54" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="img27.png"
+ ALT="$ h \rightarrow 0$"></SPAN> muss der geglättete Wert <!-- MATH
+ $\langle u (\vec{x})\rangle$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="55" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img28.png"
+ ALT="$ \langle u (\vec{x})\rangle$"></SPAN> gegen <!-- MATH
+ $u (\vec{x})$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="40" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img29.png"
+ ALT="$ u (\vec{x})$"></SPAN> gehen.
+<P></P>
+<DIV ALIGN="CENTER" CLASS="mathdisplay"><A NAME="eq:limit"></A><!-- MATH
+ \begin{equation}
+h \rightarrow 0 \Rightarrow \langle u (\vec{x})\rangle \rightarrow u (\vec{x})
+\end{equation}
+ -->
+<TABLE CLASS="equation" CELLPADDING="0" WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE">
+<TD NOWRAP ALIGN="CENTER"><SPAN CLASS="MATH"><IMG
+ WIDTH="200" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img30.png"
+ ALT="$\displaystyle h \rightarrow 0 \Rightarrow \langle u (\vec{x})\rangle \rightarrow u (\vec{x})$"></SPAN></TD>
+<TD NOWRAP CLASS="eqno" WIDTH="10" ALIGN="RIGHT">
+(<SPAN CLASS="arabic">2</SPAN>.<SPAN CLASS="arabic">6</SPAN>)</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL"><P></P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Unterabschnitte</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><UL>
+<LI><UL>
+<LI><A NAME="tex2html204"
+  HREF="node7.html">Notation:</A>
+</UL></UL></UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

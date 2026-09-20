@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>set_height_function</TITLE>
+<META NAME="description" CONTENT="set_height_function">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node51.html">
+<LINK REL="previous" HREF="node49.html">
+<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node51.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html795"
+  HREF="node51.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html791"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html785"
+  HREF="node49.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html793"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html796"
+  HREF="node51.html">set_height_function_normal</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html792"
+  HREF="node37.html">Public member von Fluid</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html786"
+  HREF="node49.html">get_surfacegrid</A>
+ &nbsp; <B>  <A NAME="tex2html794"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION006413000000000000000"></A>
+<A NAME="setheightfunction"></A>
+<BR>
+set_height_function
+</H2>
+
+<P>
+<TT>void Fluid::set_height_function(float (*height_function)(float x, float y))</TT>
+
+<P>
+Ermöglicht es, der Flüssigkeit ein auf dem ganzen Simulationsgebiet (global) gültiges Höhenfeld zu übergeben. Diese Funktion sollte
+mit geringstmöglichem Zeitaufwand auszuwerten sein,
+da jedes bewegte Partikel in jedem Zeitschritt gegen dieses Höhenfeld auf Gültigkeit geprüft wird.
+Im Einzelfall ist zu überlegen, ob lokale Begrenzungen mittels <TT>trianglelist2boundary</TT> (<A HREF="node39.html#trianglelist2boundary">5.4.2</A>) nicht performanter sind, als ein kompliziertes Höhenfeld.
+
+<P>
+
+<UL>
+<LI><TT>float (*height_function)(float x, float y))</TT>
+<BR>
+Ist der Zeiger auf eine Funktion <TT>float height_function(float, float)</TT>.
+</LI>
+</UL>
+
+<P>
+<BR><HR>
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>

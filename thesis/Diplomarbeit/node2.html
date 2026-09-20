@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.70)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Einführung</TITLE>
+<META NAME="description" CONTENT="Einführung">
+<META NAME="keywords" CONTENT="Diplomarbeit">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="Diplomarbeit.css">
+
+<LINK REL="next" HREF="node4.html">
+<LINK REL="previous" HREF="node1.html">
+<LINK REL="up" HREF="Diplomarbeit.html">
+<LINK REL="next" HREF="node3.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html154"
+  HREF="node3.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html150"
+  HREF="Diplomarbeit.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html144"
+  HREF="node1.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html152"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html155"
+  HREF="node3.html">Zweck und Aufbau dieser</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html151"
+  HREF="Diplomarbeit.html">Diplomarbeit</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html145"
+  HREF="node1.html">Inhalt</A>
+ &nbsp; <B>  <A NAME="tex2html153"
+  HREF="node1.html">Inhalt</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00200000000000000000">
+Einführung</A>
+</H1>
+Obwohl schon viel gearbeitet und geforscht wurde auf dem Gebiet der Fluidsimulation, steckt sie immer noch in den Kinderschuhen.
+Insbesondere gibt es noch keine interaktiven Verfahren, die auf großen Gebieten Wasser im Raum, also nicht als H&#246;henfeld realisieren. Anwendungen hierfür wären etwa Wasserfälle, Getränke oder Wasserwerfer in Computerspielen, aber auch zum Beispiel Blut in Operationssimulatoren.
+
+<P>
+Den Anstoß zu einem um Gr&#246;ßenordnungen umfangreicheren Simulationsgebiet brachte Herr Prof. Dr. Westermann, als er vorschlug, Zellinformationen nur noch beim Partikel zu speichern und nach diesem Zellindex die Partikel zu sortieren. Durch diese implizite Anordnung der Zellen wird erreicht, dass der Speicherbedarf unabh&#228;ngig von der Größe des simulierten Gebiets wird und meine Software keine 15MB benötigt, um 3000 Partikel in einem Gebiet bestehend aus <!-- MATH
+ $(100.000)^3$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="88" HEIGHT="39" ALIGN="MIDDLE" BORDER="0"
+ SRC="img3.png"
+ ALT="$ (100.000)^3$"></SPAN> Zellen zu simulieren. Möchte man 500.000 Partikel verwenden, so stehen immernoch <!-- MATH
+ $(16.000)^3$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="79" HEIGHT="39" ALIGN="MIDDLE" BORDER="0"
+ SRC="img4.png"
+ ALT="$ (16.000)^3$"></SPAN> Zellen zur Verfügung.
+
+<P>
+Laut Nick Fosters &amp; Ronald Fedkiws <EM>,,Practical animation of liquids``</EM> [<A
+ HREF="node63.html#FOFE">1</A>] wurde z.B. für die Simulation der Schlammdusche von Dreamworks ,,Shrek`` lediglich ein Gitter von 150 x 200 x 150 Zellen verwendet.
+Um auf meiner Datenstruktur Physik berechnen zu k&#246;nnen und vor allem um die zugeh&#246;rige Oberfl&#228;che zu konstruieren, sind allerdings sehr spezialisierte Ans&#228;tze gefragt.
+So orientiert sich diese Arbeit im Groben an [<A
+ HREF="node63.html#ETHZ">2</A>] von Matthias M&#252;ller, David Charypar &amp; Markus Gross, passt deren Ans&#228;tze aber auf die erw&#228;hnte Datenstruktur an.
+Au&#223;erdem wird die auf ATI-Grafikkarten vorhandene TRUFORM<!-- MATH
+ $^\texttt{TM}$
+ -->
+<SPAN CLASS="MATH"><IMG
+ WIDTH="19" HEIGHT="20" ALIGN="BOTTOM" BORDER="0"
+ SRC="img5.png"
+ ALT="$ ^\texttt{TM}$"></SPAN>-Erweiterung genutzt, um auf einem relativ groben Gitter mittels des Marching Cube Algorithmus erzeugte, durch ebene Teilfl&#228;chen charakterisierte, also eckige,
+Oberfl&#228;chen rund darzustellen.
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Unterabschnitte</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html156"
+  HREF="node3.html">Zweck und Aufbau dieser Diplomarbeit</A>
+</UL>
+<!--End of Table of Child-Links-->
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html154"
+  HREF="node3.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next"
+ SRC="/usr/share/latex2html/icons/next.png"></A> 
+<A NAME="tex2html150"
+  HREF="Diplomarbeit.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up"
+ SRC="/usr/share/latex2html/icons/up.png"></A> 
+<A NAME="tex2html144"
+  HREF="node1.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous"
+ SRC="/usr/share/latex2html/icons/prev.png"></A> 
+<A NAME="tex2html152"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents"
+ SRC="/usr/share/latex2html/icons/contents.png"></A>  
+<BR>
+<B> N&auml;chste Seite:</B> <A NAME="tex2html155"
+  HREF="node3.html">Zweck und Aufbau dieser</A>
+<B> Aufw&auml;rts:</B> <A NAME="tex2html151"
+  HREF="Diplomarbeit.html">Diplomarbeit</A>
+<B> Vorherige Seite:</B> <A NAME="tex2html145"
+  HREF="node1.html">Inhalt</A>
+ &nbsp; <B>  <A NAME="tex2html153"
+  HREF="node1.html">Inhalt</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Leo Wandersleb
+2005-01-17
+</ADDRESS>
+</BODY>
+</HTML>
