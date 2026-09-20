@@ -306,7 +306,7 @@ class Fluid
 				exit ( 1 );
 			}
 
-			_sortlist = new unsigned __int64[ _maxparticlecount * 4 ];
+			_sortlist = new unsigned __int64[ _maxparticlecount * 4 ] ();
 			_ParticleIdBitmask = ( 0xffffffffffffffffULL ) >> ( 64-_maxparticlecountbits );
 			_BoxIdBitmask =
 			    ( ( ( ( ( unsigned __int64 ) 1 <<  _cellszbits )-1 ) ) << _cellsxplus2yparticlebits ) |
@@ -1527,14 +1527,14 @@ class Fluid
 			unsigned __int64 sortlistbase = startsortlistid - ( startsortlistid % _maxparticlecount );
 			unsigned __int64 sortlistindex = startsortlistid - sortlistbase + 1;
 
-			while ( ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) && ( sortlistindex < _particlecount ) )
+			while ( ( sortlistindex < _particlecount ) && ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) )
 			{
 				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) ) == 1 )
 					return;
 				++sortlistindex;
 			}
 			sortlistindex=startsortlistid - sortlistbase - 1;
-			while ( ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) && ( sortlistindex < _particlecount ) )
+			while ( ( sortlistindex < _particlecount ) && ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) )
 			{
 				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) ) == 1 )
 					return;
@@ -1625,13 +1625,13 @@ class Fluid
 			unsigned __int64 sortlistbase = startsortlistid - ( startsortlistid % _maxparticlecount );
 			unsigned __int64 sortlistindex = startsortlistid - sortlistbase + 1;
 
-			while ( ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) && ( sortlistindex < _particlecount ) )
+			while ( ( sortlistindex < _particlecount ) && ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) )
 			{
 				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) );
 				++sortlistindex;
 			}
 			sortlistindex=startsortlistid - sortlistbase - 1;
-			while ( ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) && ( sortlistindex < _particlecount ) )
+			while ( ( sortlistindex < _particlecount ) && ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) )
 			{
 				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) );
 				--sortlistindex;
