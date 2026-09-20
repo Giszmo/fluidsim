@@ -95,7 +95,7 @@ void read_24bitbmp ( const char * filename, unsigned char ** pixelinfo, unsigned
 float ** vertex_array_pointer, ** normal_array_pointer;
 unsigned long vn_arraylength, vn_count;
 
-unsigned long ** index_array_pointer;
+unsigned int ** index_array_pointer;
 unsigned long index_arraylength;
 
 float ** particle_coords_pointer, ** particle_colors_pointer;
@@ -205,8 +205,8 @@ int main ( int argc,char** argv )
 	*normal_array_pointer = new float[100];
 	vn_arraylength=10;
 
-	index_array_pointer=new unsigned long*;
-	*index_array_pointer = new unsigned long[100];
+	index_array_pointer=new unsigned int*;
+	*index_array_pointer = new unsigned int[100];
 	index_arraylength=10;
 
 	particle_coords_pointer=new float*;
@@ -569,7 +569,7 @@ void PrintVolumeOfClosedSurface()
 {
 	unsigned long i;
 	float * va;
-	unsigned long * ia;
+	unsigned int * ia;
 	float volume,dv;
 	va = ( *vertex_array_pointer );
 	ia = ( *index_array_pointer );
