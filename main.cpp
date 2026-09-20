@@ -21,6 +21,7 @@ using namespace std;
 #define WORD unsigned char
 #define LONG long int
 #include <GL/glut.h>
+#include "shaders.h"
 #endif
 #define WIDTH  1024
 #define HEIGHT 768
@@ -81,7 +82,15 @@ bool showcells = false;
 // scales it from here.
 #define LIQUID_PARTICLES_DEFAULT 1875
 bool showparticles = true;
-bool TRUFORM_ON = false;
+//PN triangles on the surface. In 2005 this was TRUFORM, an ATI extension that
+//no driver has any more; today it is the OpenGL 4 tessellation stage doing the
+//same maths, see shaders.cpp. Off automatically where there is no OpenGL 4.
+bool tessellation_on = true;
+//How long one tessellated segment should come out on screen, in pixels, and how
+//far a single triangle may be subdivided. Together they make the subdivision
+//adaptive: close water is smooth, distant spray costs nothing.
+float tess_pixels_per_segment = 12.0f;
+float tess_max_level = 8.0f;
 bool showlight = false;
 float groundlevel ( float a, float b );
 Vektor groundlevelnormal ( float a, float b );
@@ -154,6 +163,8 @@ static void usage ( const char * argv0 )
 	"  -t, --threads N     OpenMP threads (default: as many as the machine has)\n"
 	"  -r, --run           start running instead of paused\n"
 	"  -s, --surface       start with the marching-cubes surface on\n"
+	"  -F, --flat          do not tessellate the surface (PN triangles are on by\n"
+	"                      default wherever the driver has OpenGL 4)\n"
 	"  -h, --help          this\n"
 	"\n"
 	"To go past the built-in cap of particles the simulation can hold, set\n"
@@ -180,6 +191,8 @@ int main ( int argc,char** argv )
 			paused = false;
 		else if ( a=="-s" || a=="--surface" )
 			showcells = true;
+		else if ( a=="-F" || a=="--flat" )
+			tessellation_on = false;
 		else if ( a=="-h" || a=="--help" )
 		{
 			usage ( argv[0] );
@@ -641,7 +654,17 @@ void kbf ( unsigned char key,int x, int y )
 			showlight = !showlight;
 			break;
 		case 't' :
-			TRUFORM_ON = !TRUFORM_ON;
+			tessellation_on = !tessellation_on;
+			if ( tessellation_on && !surface_tessellation_available() )
+				cout << "no tessellation here: " << surface_shaders_error() << endl;
+			else
+				cout << "PN triangle tessellation " << ( tessellation_on ? "on" : "off" ) << endl;
+			break;
+		case 'T' :
+			tess_max_level *= 2.0f;
+			if ( tess_max_level > 16.0f )
+				tess_max_level = 2.0f;
+			cout << "tessellation level up to " << tess_max_level << endl;
 			break;
 		case 'p' :
 			paused = !paused;
@@ -801,15 +824,6 @@ void DisplayMain ( void )
 	//					glDrawElements(GL_TRIANGLES,vertexcount / 3, GL_UNSIGNED_INT, indices);
 	if ( showcells )
 	{
-#ifdef WIN32
-		if ( TRUFORM_ON )
-		{
-			glEnable ( GL_PN_TRIANGLES_ATI );
-			glPNTrianglesiATI ( GL_PN_TRIANGLES_POINT_MODE_ATI, GL_PN_TRIANGLES_POINT_MODE_CUBIC_ATI );
-			glPNTrianglesiATI ( GL_PN_TRIANGLES_NORMAL_MODE_ATI, GL_PN_TRIANGLES_NORMAL_MODE_QUADRATIC_ATI );
-			glPNTrianglesiATI ( GL_PN_TRIANGLES_TESSELATION_LEVEL_ATI, 7 );
-		}
-#endif
 		//glCallList(BOX);
 		//glCallList(GROUND);
 
@@ -833,18 +847,25 @@ void DisplayMain ( void )
 
 		glColor4f ( 0.66f,0.66f,1.0f,0.4f );
 
-		glDrawElements ( GL_TRIANGLES, 3*trianglecount, GL_UNSIGNED_INT, *index_array_pointer );
+		//The same triangles either way. With tessellation they go in as patches
+		//and come back out of the evaluation shader as a curved surface; without
+		//it they are drawn flat, exactly as before.
+		const bool tess = tessellation_on && surface_tessellation_available();
+		if ( tess )
+		{
+			surface_tessellation_bind ( tess_pixels_per_segment, tess_max_level );
+			glDrawElements ( GL_PATCHES, 3*trianglecount, GL_UNSIGNED_INT, *index_array_pointer );
+			surface_tessellation_unbind();
+		}
+		else
+		{
+			glDrawElements ( GL_TRIANGLES, 3*trianglecount, GL_UNSIGNED_INT, *index_array_pointer );
+		}
 		//glDrawArrays(GL_POINTS,0,vertexcount);
 		/*glBegin(GL_LINES);
 		for (i=0; i < vertexcount-3; i+=3)
 			glVertex3f (va[i],va[i+1],va[i+2]);
 		glEnd();*/
-#ifdef WIN32
-		if ( TRUFORM_ON )
-		{
-			glDisable ( GL_PN_TRIANGLES_ATI );
-		}
-#endif
 		if ( shownormals )
 		{
 			glDisable ( GL_LIGHTING );
@@ -982,6 +1003,8 @@ void initMain()
 	if ( glutGetWindow() )
 		glutDestroyWindow ( winIdMain );
 	winIdMain = glutCreateWindow ( ( char* ) TITLE );
+	//Needs the context, so not before the window exists.
+	surface_shaders_init();
 
 	float mat_specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float mat_shininess = 50.0;
