@@ -26,13 +26,19 @@ MK := $(OS).$(OSMVER)_$(COMP_VER)$(VARIANT)
 
 # choose compiler
 CC := g++ -DPCCTS_USE_NAMESPACE_STD
+# ARCH is what -march= gets. "native" is right for a machine you build on
+# yourself; use e.g. ARCH=x86-64-v2 for a binary that has to run elsewhere.
+ARCH ?= native
 CFLAGS := -g -DVERBOSE 
 ifeq "$(VARIANT)" "dbg"
 CFLAGS += -DTRACE -Wall -pg
 endif
 ifeq "$(VARIANT)" "opt"
-CFLAGS := -O3 -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -mmmx -march=x86-64 -mno-sse2 -msse -mfpmath=sse -mfpmath=sse,387
-#CFLAGS := -O3 -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -mmmx -march=pentium4 -mno-sse2 -msse -mfpmath=sse -mfpmath=sse,387
+CFLAGS := -O3 -fomit-frame-pointer -ffast-math -funroll-loops -fprefetch-loop-arrays -march=$(ARCH)
+# The 2004 original, kept for the record. It targets a Pentium 4, and it turns
+# SSE2 off and x87 math on, which costs about a third of the frame rate on any
+# CPU made since:
+#CFLAGS := -O3 -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -mmmx -march=x86-64 -mno-sse2 -msse -mfpmath=sse -mfpmath=sse,387
 #CFLAGS := -O3 -march=pentium4 -pipe -ffast-math -fPIC -mno-sse2 -mmmx -msse -mfpmath=sse,387 -falign-functions=4 -fomit-frame-pointer
 #CFLAGS := -O3 -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -mmmx -march=pentium4 -msse2 -mfpmath=sse
 #CFLAGS := -O3 -fomit-frame-pointer -ffast-math -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -mmmx -m3dnow -march=athlon-xp -msse -mfpmath=sse
