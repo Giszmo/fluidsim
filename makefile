@@ -25,7 +25,9 @@ OSMVER := $(firstword $(subst ., ,$(OSVER)))
 MK := $(OS).$(OSMVER)_$(COMP_VER)$(VARIANT)
 
 # choose compiler
-CC := g++ -DPCCTS_USE_NAMESPACE_STD
+# -fopenmp: the two neighbour passes and the four list sorts run on every core,
+# see progress() in fluid.h. Without it everything still builds and runs, on one.
+CC := g++ -DPCCTS_USE_NAMESPACE_STD -fopenmp
 # ARCH is what -march= gets. "native" is right for a machine you build on
 # yourself; use e.g. ARCH=x86-64-v2 for a binary that has to run elsewhere.
 ARCH ?= native
@@ -61,7 +63,7 @@ endif
 INCS = -I/share/GL/include/ -I/share/GL/include/Inventor  -I/usr/X11R6/include
 MAKE = make
 
-LIBS     =  -lboost_thread -lm -L/share/GL/lib -L/usr/X11R6/lib -lglut -L/usr/X11/lib -lGLU -lGL 
+LIBS     =  -lm -L/share/GL/lib -L/usr/X11R6/lib -lglut -L/usr/X11/lib -lGLU -lGL 
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
@@ -137,8 +139,9 @@ tags:
 # checksum over every particle position, so two builds can be compared
 #
 test/headless: test/headless.cpp fluid.h particle.h vektor.h
-	$(CC) -O2 -g -o $@ $< -lboost_thread
+	$(CC) -O2 -g -o $@ $<
 
 check: test/headless
 	./test/headless 0 3
 	./test/headless 1 3
+	./test/headless cmp

@@ -9,8 +9,10 @@
 #include <cstring>
 #include <cstdlib>
 
-#include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
+#include <algorithm>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include <iostream>
 using namespace std;
@@ -241,6 +243,19 @@ class Fluid
 		Vektor _a;
 		float ( *_height_function ) ( float x, float y );
 		Vektor ( *_height_function_normal ) ( float x, float y );
+
+		//Per-thread accumulators for the two neighbour passes. Both passes write to
+		//*both* particles of a pair, so each thread sums into its own buffer and the
+		//buffers are reduced afterwards - that is what lets the passes run on every
+		//core without a single lock. _fixx/_fixv hold the boundary, teleport, shift
+		//and setspeed corrections, which are applied after the pass so that no thread
+		//writes a position another thread is reading.
+		int _threads;                  //number of accumulators, 0 = not allocated yet
+		Vektor * _fbuf;                //_threads * _maxparticlecount
+		float * _rhobuf;               //_threads * _maxparticlecount
+		Vektor * _fixx;
+		Vektor * _fixv;
+		unsigned char * _fixed;
 	public:
 		//#ifdef debug
 		//bool deb_colliderecording;
@@ -307,6 +322,12 @@ class Fluid
 			}
 
 			_sortlist = new unsigned __int64[ _maxparticlecount * 4 ] ();
+			_threads = 0;
+			_fbuf = 0;
+			_rhobuf = 0;
+			_fixx = 0;
+			_fixv = 0;
+			_fixed = 0;
 			_ParticleIdBitmask = ( 0xffffffffffffffffULL ) >> ( 64-_maxparticlecountbits );
 			_BoxIdBitmask =
 			    ( ( ( ( ( unsigned __int64 ) 1 <<  _cellszbits )-1 ) ) << _cellsxplus2yparticlebits ) |
@@ -341,6 +362,11 @@ class Fluid
 //		file2fluid("test.txt");
 			delete [] _particle;
 			delete [] _sortlist;
+			delete [] _fbuf;
+			delete [] _rhobuf;
+			delete [] _fixx;
+			delete [] _fixv;
+			delete [] _fixed;
 			delete [] *_tmp_pending_list_pointer;
 			delete [] *_tmp_node_list_pointer;
 			delete [] *_tmp_cube_list_pointer;
@@ -368,26 +394,36 @@ class Fluid
 		{
 			if ( dt>0 )
 			{
-				unsigned long i;
 				static float t=0;
 				t+=dt;
 				putparticles2cells();
 				sortparticlelists();
-				for ( i=0; i<_particlecount_physik; i++ )
-				{
-					_particle[i].resetrho();
-					_particle[i].acc ( _a );
-				}
-				for ( i=0; i<_particlecount_physik; i++ )
-				{
-					collidewithneighboursforrho ( i );
-				}
-				for ( i=0; i<_particlecount_physik; i++ )
-				{
-					collidewithneighbours ( i );
-				}
+				prepare_accumulators();
 
-				for ( i=0; i<_particlecount_physik; i++ )
+				const long n = ( long ) _particlecount_physik;
+
+				//density pass: every thread accumulates into its own buffer
+				#pragma omp parallel
+				{
+					float * rhobuf = _rhobuf + ( size_t ) thread_id() * _maxparticlecount;
+					#pragma omp for schedule ( static, 64 )
+					for ( long i=0; i<n; i++ )
+						collidewithneighboursforrho ( ( unsigned long ) i, rhobuf );
+				}
+				reduce_rho();
+
+				//force pass: same, plus the deferred boundary corrections
+				#pragma omp parallel
+				{
+					Vektor * fbuf = _fbuf + ( size_t ) thread_id() * _maxparticlecount;
+					#pragma omp for schedule ( static, 64 )
+					for ( long i=0; i<n; i++ )
+						collidewithneighbours ( ( unsigned long ) i, fbuf );
+				}
+				reduce_forces();
+
+				#pragma omp parallel for schedule ( static, 64 )
+				for ( long i=0; i<n; i++ )
 				{
 					_particle[i].move ( dt );
 					if ( _particle[i].x().z() < _height_function ( _particle[i].x().x(),_particle[i].x().y() ) )
@@ -400,6 +436,74 @@ class Fluid
 				return 1;
 			}
 			return 0;
+		}
+		int thread_id()
+		{
+#ifdef _OPENMP
+			return omp_get_thread_num();
+#else
+			return 0;
+#endif
+		}
+		//Allocate (once) and clear the per-thread accumulators. Thread 0's force
+		//buffer starts at the global acceleration, so the sum over all buffers is
+		//exactly what the serial pass used to accumulate on top of it.
+		void prepare_accumulators()
+		{
+			if ( !_threads )
+			{
+#ifdef _OPENMP
+				_threads = omp_get_max_threads();
+#else
+				_threads = 1;
+#endif
+				_fbuf   = new Vektor[ ( size_t ) _threads * _maxparticlecount ];
+				_rhobuf = new float [ ( size_t ) _threads * _maxparticlecount ];
+				_fixx   = new Vektor[_maxparticlecount];
+				_fixv   = new Vektor[_maxparticlecount];
+				_fixed  = new unsigned char[_maxparticlecount];
+			}
+			const long n = ( long ) _particlecount_physik;
+			#pragma omp parallel for schedule ( static, 1 )
+			for ( int t=0; t<_threads; ++t )
+			{
+				memset ( _rhobuf + ( size_t ) t*_maxparticlecount, 0, ( size_t ) n*sizeof ( float ) );
+				if ( t )
+					memset ( _fbuf + ( size_t ) t*_maxparticlecount, 0, ( size_t ) n*sizeof ( Vektor ) );
+				else
+					for ( long i=0; i<n; ++i )
+						_fbuf[i] = _a;
+			}
+			memset ( _fixed, 0, ( size_t ) n );
+		}
+		void reduce_rho()
+		{
+			const long n = ( long ) _particlecount_physik;
+			#pragma omp parallel for schedule ( static, 64 )
+			for ( long i=0; i<n; i++ )
+			{
+				float rho = _rhobuf[i];
+				for ( int t=1; t<_threads; ++t )
+					rho += _rhobuf[ ( size_t ) t*_maxparticlecount + i];
+				_particle[i].setrho ( rho );
+			}
+		}
+		void reduce_forces()
+		{
+			const long n = ( long ) _particlecount_physik;
+			#pragma omp parallel for schedule ( static, 64 )
+			for ( long i=0; i<n; i++ )
+			{
+				Vektor a = _fbuf[i];
+				for ( int t=1; t<_threads; ++t )
+					a = a + _fbuf[ ( size_t ) t*_maxparticlecount + i];
+				_particle[i].acc ( a );
+				if ( _fixed[i] )
+				{
+					_particle[i].setx ( _fixx[i] );
+					_particle[i].setv ( _fixv[i] );
+				}
+			}
 		}
 		unsigned long particlecount ( void )
 		{
@@ -1517,7 +1621,10 @@ class Fluid
 		{
 			return _particle[particle_id].get_sortlistindex ( sortlist_id );
 		}
-		void collidewithneighbours ( const unsigned long id )
+		//Scan the neighbourhood of one particle. Writes go to the caller's private
+		//force buffer and to a working copy of the scanning particle, never to
+		//another particle's state, so the whole pass runs without synchronisation.
+		void collidewithneighbours ( const unsigned long id, Vektor * fbuf )
 		{
 
 			unsigned char activesortlist = get_relevantsortlist ( id );
@@ -1527,34 +1634,57 @@ class Fluid
 			unsigned __int64 sortlistbase = startsortlistid - ( startsortlistid % _maxparticlecount );
 			unsigned __int64 sortlistindex = startsortlistid - sortlistbase + 1;
 
+			//boundary, teleport, shift and setspeed move the scanning particle, and
+			//those moves have to compose within this scan exactly as they did when the
+			//pass was serial - hence a working copy, written back afterwards.
+			Vektor wx = _particle[id].x();
+			Vektor wv = _particle[id].v();
+			bool moved = false;
+
 			while ( ( sortlistindex < _particlecount ) && ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) )
 			{
-				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) ) == 1 )
+				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ),fbuf,wx,wv,moved ) == 1 )
+				{
+					store_move ( id,wx,wv,moved );
 					return;
+				}
 				++sortlistindex;
 			}
 			sortlistindex=startsortlistid - sortlistbase - 1;
 			while ( ( sortlistindex < _particlecount ) && ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) )
 			{
-				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) ) == 1 )
+				if ( condcollide ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ),fbuf,wx,wv,moved ) == 1 )
+				{
+					store_move ( id,wx,wv,moved );
 					return;
+				}
 				--sortlistindex;
 			}
+			store_move ( id,wx,wv,moved );
 		}
-		int condcollide ( const unsigned long first, const unsigned long second )
+		void store_move ( const unsigned long id, const Vektor & wx, const Vektor & wv, const bool moved )
+		{
+			if ( moved )
+			{
+				_fixx[id] = wx;
+				_fixv[id] = wv;
+				_fixed[id] = 1;
+			}
+		}
+		int condcollide ( const unsigned long first, const unsigned long second, Vektor * fbuf, Vektor & wx, Vektor & wv, bool & moved )
 		{
 			if ( ( first < second ) & ( second < _particlecount ) )   //TODO: workaround?? exit outer loop
 			{
-				return collide ( first,second );
+				return collide ( first,second,fbuf,wx,wv,moved );
 			}
 			return 10;
 		}
-		int collide ( const unsigned long first, const unsigned long second )
+		int collide ( const unsigned long first, const unsigned long second, Vektor * fbuf, Vektor & wx, Vektor & wv, bool & moved )
 		{
 			Vektor f; //force
 			Vektor r;
 			float offset;
-			r = _particle[first].x()-_particle[second].x(); //connecting Vektor
+			r = wx-_particle[second].x(); //connecting Vektor
 			offset = r*_particle[second].a();
 			if ( second >=_particlecount_physik )
 			{
@@ -1568,29 +1698,33 @@ class Fluid
 					case ( boundary ) ://flip velocity vertical to the boundary
 									if ( offset < 0 )
 							{
-								_particle[first].setx ( _particle[first].x() - _particle[second].v().norm ( offset ) );
-								_particle[first].setv ( _particle[first].v() + _particle[second].v() * ( ( _particle[first].v() *_particle[second].v().norm ( -1.01f ) ) ) );
+								wx = wx - _particle[second].v().norm ( offset );
+								wv = wv + _particle[second].v() * ( ( wv *_particle[second].v().norm ( -1.01f ) ) );
+								moved = true;
 							}
 						return 10;
 						break;
 					case ( teleport ) :
 									if ( offset < 0 )
 							{
-								_particle[first].setx ( _particle[second].v() + ( _particle[first].x()-_particle[second].x() ) /10.0f );
+								wx = _particle[second].v() + ( wx-_particle[second].x() ) /10.0f;
+								moved = true;
 								return 1;
 							}
 						break;
 					case ( shift ) :
 									if ( offset < 0 )
 							{
-								_particle[first].setx ( _particle[first].x() +_particle[second].v() );
+								wx = wx +_particle[second].v();
+								moved = true;
 								return 1;
 							}
 						break;
 					case ( setspeed ) :
 									if ( offset < 0 )
 							{
-								_particle[first].setv ( _particle[second].v() );
+								wv = _particle[second].v();
+								moved = true;
 								return 10;
 							}
 						break;
@@ -1609,14 +1743,14 @@ class Fluid
 #define _gaskonstante 1.05
 #define _rho0 0.100
 #define _m 1
-					f=r.norm ( _gaskonstante* ( _particle[first].rho() +_particle[second].rho()-2*_rho0 ) /2/_particle[second].rho() *w_poly6_grad ( d ) /*-5*/ ) + ( _particle[first].v()-_particle[second].v() ) * ( 14.72f );
-					_particle[first].push ( f* ( -1 ) );
-					_particle[second].push ( f );
+					f=r.norm ( _gaskonstante* ( _particle[first].rho() +_particle[second].rho()-2*_rho0 ) /2/_particle[second].rho() *w_poly6_grad ( d ) /*-5*/ ) + ( wv-_particle[second].v() ) * ( 14.72f );
+					fbuf[first] = fbuf[first] + f* ( -1 );
+					fbuf[second] = fbuf[second] + f;
 				}
 			}
 			return 10;
 		}
-		void collidewithneighboursforrho ( const unsigned long id )
+		void collidewithneighboursforrho ( const unsigned long id, float * rhobuf )
 		{
 			unsigned char activesortlist = get_relevantsortlist ( id );
 			unsigned long startsortlistid = get_sortlistindex ( id,activesortlist );
@@ -1627,32 +1761,32 @@ class Fluid
 
 			while ( ( sortlistindex < _particlecount ) && ( ( sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) - startcellid ) <= 1 ) )
 			{
-				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) );
+				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ),rhobuf );
 				++sortlistindex;
 			}
 			sortlistindex=startsortlistid - sortlistbase - 1;
 			while ( ( sortlistindex < _particlecount ) && ( ( startcellid - sortlist2cellid ( _sortlist[sortlistbase + sortlistindex] ) ) <= 1 ) )
 			{
-				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ) );
+				condcollideforrho ( id,sortlist2particleid ( _sortlist[sortlistbase + sortlistindex] ),rhobuf );
 				--sortlistindex;
 			}
 		}
-		void condcollideforrho ( const unsigned long first, const unsigned long second )
+		void condcollideforrho ( const unsigned long first, const unsigned long second, float * rhobuf )
 		{
 			if ( ( first < second ) & ( second < _particlecount_physik ) )   //TODO: workaround?? exit outer loop
 			{
-				collideforrho ( first,second );
+				collideforrho ( first,second,rhobuf );
 			}
 		}
-		void collideforrho ( const unsigned long first, const unsigned long second )
+		void collideforrho ( const unsigned long first, const unsigned long second, float * rhobuf )
 		{
 			Vektor r = _particle[first].x()-_particle[second].x(); //connecting Vektor
 			float dq = r.absabs(); //distance square
 			if ( dq < _particlesize_q )  //collide
 			{
 				float rho=_m*w_poly6 ( dq );
-				_particle[first].addrho ( rho );
-				_particle[second].addrho ( rho );
+				rhobuf[first] += rho;
+				rhobuf[second] += rho;
 			}
 		}
 		unsigned __int64 sortlist2cellid ( unsigned __int64 in )
@@ -1673,10 +1807,11 @@ class Fluid
 		}
 		void putparticles2cells()   //only workaround. to be removed. putparticle2cell brings in invalid particle-indices
 		{
-			unsigned long i;
-			unsigned __int64 tmpx, tmpy, tmpz;
-			for ( i=0; i<_particlecount;i++ )
+			const long n = ( long ) _particlecount;
+			#pragma omp parallel for schedule ( static, 64 )
+			for ( long i=0; i<n; i++ )
 			{
+				unsigned __int64 tmpx, tmpy, tmpz;
 				//TODO:!!!!!!!		for(i=0; i<_particlecount_physik;i++) {
 				tmpx = cellx2bitplus ( _particle[i].x() );
 				tmpy = celly2bitplus ( _particle[i].x() );
@@ -1705,6 +1840,9 @@ class Fluid
 			_sortlist[_particle[particleindex].get_sortlistindex ( 3 ) ] = ( ( ( ( ( tmpz+2 ) >> 2 ) << _cellsxplus2ybits ) | ( ( ( tmpy + 2 ) >> 2 ) << _cellsxplus2bits ) | tmpx ) <<_maxparticlecountbits ) | particleindex;
 			_particle[particleindex].set_relevantsortlist ( ( ( 1- ( unsigned char ) ( ( ( tmpy ) & 1 ) ^ ( ( ( tmpy ) & 2 ) >> 1 ) ) ) << 1 ) | ( 1- ( unsigned char ) ( ( tmpz & 1 ) ^ ( ( tmpz & 2 ) >> 1 ) ) ) );//yz?zy
 		}
+		//The 2005 hand written sort. Kept for reference; sortparticlelists() uses
+		//std::sort, which is both faster and easier to spread over more than four
+		//cores. The keys are unique, so the two produce the same order.
 		void quickbubblesort ( const unsigned long lo, const unsigned long hi )
 		{
 			unsigned long i = lo;
@@ -1782,28 +1920,23 @@ class Fluid
 		}
 		void sortparticlelists()
 		{
-			/*
-			quickbubblesort( 0 * _maxparticlecount, 0 * _maxparticlecount + _particlecount - 1 );
-			quickbubblesort( 1 * _maxparticlecount, 1 * _maxparticlecount + _particlecount - 1 );
-			quickbubblesort( 2 * _maxparticlecount, 2 * _maxparticlecount + _particlecount - 1 );
-			quickbubblesort( 3 * _maxparticlecount, 3 * _maxparticlecount + _particlecount - 1 );
-			*/
-			boost::thread my_thread1(boost::bind(&Fluid::quickbubblesort, this, 0 * _maxparticlecount, 0 * _maxparticlecount + _particlecount - 1 ));
-			boost::thread my_thread2(boost::bind(&Fluid::quickbubblesort, this, 1 * _maxparticlecount, 1 * _maxparticlecount + _particlecount - 1 ));
-			boost::thread my_thread3(boost::bind(&Fluid::quickbubblesort, this, 2 * _maxparticlecount, 2 * _maxparticlecount + _particlecount - 1 ));
-			boost::thread my_thread4(boost::bind(&Fluid::quickbubblesort, this, 3 * _maxparticlecount, 3 * _maxparticlecount + _particlecount - 1 ));
-			my_thread1.join();
-			my_thread2.join();
-			my_thread3.join();
-			my_thread4.join();
-			
+			//The four lists are independent by construction, so they sort in parallel
+			//with no synchronisation at all - the sorted-list design paying off a
+			//second time. The keys are unique (their low bits are the particle id), so
+			//the order is total and the result does not depend on how the work is split.
+			#pragma omp parallel for schedule ( static, 1 )
+			for ( int l=0; l<4; ++l )
+				std::sort ( _sortlist + ( size_t ) l*_maxparticlecount,
+				            _sortlist + ( size_t ) l*_maxparticlecount + _particlecount );
+
 			fixsortlistindices();
 			_listssorted = true;
 		}
 		void fixsortlistindices()
 		{
-			unsigned long i;
-			for ( i=0; i<_particlecount; i++ )
+			const long n = ( long ) _particlecount;
+			#pragma omp parallel for schedule ( static, 64 )
+			for ( long i=0; i<n; i++ )
 			{
 				_particle[sortlist2particleid ( _sortlist[i                    ] ) ].setsortlistindex ( 0,i );
 				_particle[sortlist2particleid ( _sortlist[i+  _maxparticlecount] ) ].setsortlistindex ( 1,i+  _maxparticlecount );
