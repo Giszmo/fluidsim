@@ -79,6 +79,27 @@ make check
 Scenario 0 drops liquid on the centre of a square plate (it comes to rest on it);
 scenario 1 drops it beside the plate (it falls straight past). Both are deterministic.
 
+## Threading
+
+`sortparticlelists()` sorts the four lists on four `boost::thread`s and joins them —
+the one substantive thing the 2008/2009 rework added over the 2005 code. It needs no
+synchronisation at all, because the four lists are independent by construction; that
+is the sorted-list design paying off a second time.
+
+It is measured, not assumed. Same scene, same simulated time, threaded against the
+serial version that is still in the source commented out (best of three, this box):
+
+| moving particles | threaded | serial |
+|---|---|---|
+| 54 | 0.03 s | 0.01 s |
+| 6 667 | 1.34 s | 1.41 s |
+| 18 297 | 3.90 s | 4.16 s |
+
+Results are bit-identical either way. So it is worth about 5–6 % end to end once there
+are thousands of particles, and it costs more than it saves below roughly a thousand,
+because four threads are created and joined on every single step. A thread pool, or a
+particle-count threshold, would remove that floor.
+
 ## Fixed here
 
 **Out-of-bounds read in the neighbour scan.** The four scan loops in
