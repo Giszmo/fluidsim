@@ -408,12 +408,22 @@ worst displacement 1.9e-06 against a particle diameter of 1.0, i.e. float roundi
 `make test/probe` builds a diagnostic that is not part of `check` because it
 reports rather than judges. It runs a scene without a window and counts every
 correction the solver applies to a velocity, split by whether the particle was
-moving into the surface or already moving away from it:
+moving into the surface or already moving away from it. It also counts the
+patches that move a particle rather than turn it — the shifts and teleports a
+scene closes its loop with — and says how far from the middle anything ever got,
+which is how you tell a loop that is turning from one that is quietly emptying
+the scene into the distance:
 
 ```sh
 ./test/probe funnel 4000
+./test/probe funnel 25000 -n 20000        # a longer run, or more water
 ./test/probe funnel 3000 /tmp/floor.txt   # and every near-floor position, per step
 ```
+
+`funnel` over 25 000 steps, 100 simulated seconds: 22 081 shifts, no teleports,
+furthest from the middle 31.6 against a rim that starts at 22, highest 100.4
+which is the top of the lift, fastest 86.7, and 12 ground bounces where the 2005
+scene had 951 in a sixth of the time.
 
 The hooks it uses are compiled into `fluid.h` only under `-DFLUID_PROBE`, which
 nothing but this program defines.
