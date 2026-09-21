@@ -61,10 +61,14 @@ const char * screenspace_error();
 
 //Draw count particles, three floats each, as a fluid surface. radius is in
 //world units and smoothing is how many times the depth is blurred - more is
-//smoother and slower. Uses the projection and lights already set, writes depth,
-//and leaves the GL state as it found it. False if it could not draw.
+//smoother and slower. focus is roughly how far the water is from the camera,
+//in world units: the offscreen buffers are scaled from it so that a splat comes
+//out about the same size in them at any zoom, which is what keeps both the cost
+//and the amount of smoothing independent of how close you are. lit says whether
+//the scene's lamps are on. Uses the projection and lights already set, writes
+//depth, and leaves the GL state as it found it. False if it could not draw.
 bool screenspace_render ( const float * positions, unsigned long count,
-                          float radius, int smoothing );
+                          float radius, int smoothing, float focus, bool lit );
 
 //Give the render targets back. Safe on a context that is already gone.
 void screenspace_free();

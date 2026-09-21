@@ -99,8 +99,11 @@ bool screenspace_on = false;
 //the smoothing pass has holes to fill; half again closes them without turning
 //the spray into blobs.
 float screenspace_radius = 1.5f;
-//How many times the depth buffer is blurred. More is smoother and slower.
-int screenspace_smoothing = 4;
+//How many times the depth buffer is blurred. More is smoother and slower. Two
+//passes of a filter that is itself as wide as a splat is plenty; it was four
+//while the filter was capped far below that and had to be applied repeatedly to
+//reach anywhere.
+int screenspace_smoothing = 2;
 bool showlight = false;
 float groundlevel ( float a, float b );
 Vektor groundlevelnormal ( float a, float b );
@@ -934,7 +937,8 @@ void DisplayMain ( void )
 	if ( screenspace_on && screenspace_available() && shown )
 	{
 		screenspace_render ( shown->particles, shown->movingparticlecount,
-		                     f.particleradius() *screenspace_radius, screenspace_smoothing );
+		                     f.particleradius() *screenspace_radius, screenspace_smoothing,
+		                     ( float ) distanz, showlight );
 	}
 
 	glutSwapBuffers ();

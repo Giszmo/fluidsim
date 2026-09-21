@@ -335,6 +335,18 @@ Four passes, all in `shaders.cpp`:
    normal from its screen derivatives, light it, write depth so the water sits properly
    in the scene.
 
+**The offscreen buffers are scaled to the zoom.** Everything here is per pixel — the
+splats, the blur, the shading — so at a fixed buffer size the whole thing gets more
+expensive the closer the camera is, while the blur, which has to be capped somewhere or
+it costs a texture read per pixel per step of its radius, smooths relatively *less and
+less*. Zoomed in you paid the most and saw individual spheres. The buffers are sized
+instead from how big a splat comes out at the camera's distance, so a splat comes out about
+six pixels across in them and both the cost and the amount of smoothing stay put.
+It is the one change that fixes the look and the frame rate at the same time. It stops
+at half the window in each axis, because below that the silhouette starts showing the
+buffer's own pixels and single droplets of spray fall between them — so from very close
+up the cap is still the cap.
+
 Two things worth knowing about it.
 
 **The water is composited last.** It is transparent, so it has to be drawn after the
@@ -344,7 +356,11 @@ cleared background and comes out black.
 **It is lit by a sky, not only by the scene's two lamps.** Water absorbs red first, and
 the only lamp facing the camera in this scene is the red one, so deep water shaded from
 those two lights alone goes black. The composite adds a hemisphere ambient — pale blue
-from world +z, dark from below — which is what actually lights water outdoors.
+from world +z, dark from below — which is what actually lights water outdoors. And it
+honours `l` like everything else in the viewer does: the scene's two lamps are a
+saturated red one and a saturated blue one, which on a smooth surface read as two-tone
+plastic rather than as water, and lighting is off by default. With it off the water is
+lit by the sky alone.
 
 What it gives you: no marching cubes pass, no mesh to rebuild and re-upload every frame,
 and a cost that is per pixel rather than per particle. What it cannot give you is
@@ -364,6 +380,21 @@ every frame, which is the cost screen-space does not pay.
 | marching cubes, flat triangles | 351 |
 | marching cubes + PN tessellation | 130 |
 | screen-space fluid | 60 |
+
+The screen-space row is from before the offscreen buffers were scaled to the zoom, and
+it is a single camera position, which for that path is the thing that matters most. What
+the scaling is worth, on the frozen opening frame at 10 000 particles, 1024×768, by how
+far the camera is from the water:
+
+| camera | before | after |
+|---|---|---|
+| close enough that the water fills the window | 28 fps | **103** |
+| a little further | 61 | 99 |
+| the whole splash in view | 131 | 177 |
+| far | 151 | 204 |
+
+And the cost really is per pixel and not per particle: on the closest of those, 2 000
+particles gives 104 fps, 10 000 gives 103 and 40 000 gives 110.
 
 ## Fixed here
 

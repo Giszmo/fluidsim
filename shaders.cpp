@@ -365,6 +365,25 @@ static int    g_tw = 0, g_th = 0;
 //water here" value the composite pass tests for.
 static const float SP_EMPTY = -1.0e9f;
 
+//How far the depth blur may reach, in buffer pixels. It is what the pass costs:
+//every pixel reads 2n+1 texels along each axis, so a cap is not optional.
+static const float SP_MAX_BLUR_PX = 24.0f;
+
+//How big a splat should come out in the offscreen buffers, in pixels across.
+//The whole pipeline - the splats, the blur, the shading - is per pixel, so at a
+//fixed buffer size everything gets more expensive the closer the camera is,
+//while the blur, capped at SP_MAX_BLUR_PX, smooths relatively less and less:
+//zoomed in you pay the most and see individual spheres. Scaling the buffers
+//instead keeps a splat the same size in them at any zoom, which holds both the
+//cost and the amount of smoothing steady.
+static const float SP_TARGET_SPLAT_PX = 6.0f;
+
+//And how far down that scaling may go. Below about a half the silhouette starts
+//to show the buffer's own pixels, and single droplets of spray fall through
+//between them - so from very close up the buffer stops shrinking and the blur
+//goes back to being capped by SP_MAX_BLUR_PX.
+static const float SP_MIN_SCALE = 0.5f;
+
 //A sphere, from a square point sprite. Writes eye-space z as colour and the
 //sphere's own depth as depth, so the spheres intersect each other properly
 //instead of being flat discs.
@@ -454,22 +473,25 @@ void main()
 		return;
 	}
 	float n = clamp ( uWorldRadius*uProjScale / max ( -z, 0.0001 ), 1.0, uMaxRadiusPx );
-	float sum = 0.0, wsum = 0.0;
-	for ( int k=-32; k<=32; ++k )
+	float sum = z, wsum = 1.0;
+	for ( int k=1; k<=32; ++k )
 	{
 		float i = float ( k );
-		if ( abs ( i ) > n )
-			continue;
-		float sz = texture ( uDepth, vUV + uStep*i ).r;
-		if ( sz <= uEmpty )
-			continue;
+		if ( i > n )
+			break;
 		float wr = exp ( - ( i*i ) / max ( n*n*0.5, 1.0 ) );
-		float dz = ( sz - z ) * uDepthFalloff;
-		float wd = exp ( - dz*dz );
-		sum  += sz * wr * wd;
-		wsum +=      wr * wd;
+		for ( int side=0; side<2; ++side )
+		{
+			float sz = texture ( uDepth, vUV + uStep* ( side==0 ? i : -i ) ).r;
+			if ( sz <= uEmpty )
+				continue;
+			float dz = ( sz - z ) * uDepthFalloff;
+			float wd = exp ( - dz*dz );
+			sum  += sz * wr * wd;
+			wsum +=      wr * wd;
+		}
 	}
-	oEyeZ = wsum > 0.0 ? sum/wsum : z;
+	oEyeZ = sum/wsum;
 }
 )";
 
@@ -484,6 +506,7 @@ uniform sampler2D uThickness;
 uniform vec2      uViewport;
 uniform float     uWorldRadius;
 uniform float     uEmpty;
+uniform float     uLit;           //1 when the scene's lamps are on, 0 when not
 out vec4 oColour;
 
 vec3 eye_from_depth ( vec2 uv, float z )
@@ -553,7 +576,11 @@ void main()
 	float hemi = 0.5 + 0.5*dot ( n, up );
 	vec3 rgb   = albedo * mix ( vec3 ( 0.10,0.09,0.08 ), vec3 ( 0.40,0.55,0.75 ), hemi );
 
-	for ( int i=0;i<2;++i )
+	//The scene's two lamps are a saturated red one and a saturated blue one, and
+	//on a smooth surface they read as two-tone plastic rather than as water. `l`
+	//turns them off for everything else in the viewer and it turns them off
+	//here too, leaving the sky, which is what actually lights water.
+	for ( int i=0;i<2 && uLit > 0.5;++i )
 	{
 		vec4 lp = gl_LightSource[i].position;
 		vec3 l  = normalize ( lp.w > 0.0 ? lp.xyz - p : lp.xyz );
@@ -721,15 +748,31 @@ static void blur_axis ( GLuint src, GLuint dst, float dx, float dy )
 }
 
 bool screenspace_render ( const float * positions, unsigned long count,
-                          float radius, int smoothing )
+                          float radius, int smoothing, float focus, bool lit )
 {
 	if ( !g_sp_ok || count == 0 )
 		return false;
 
 	GLint vp[4] = { 0,0,1,1 };
 	glGetIntegerv ( GL_VIEWPORT, vp );
-	const int w = vp[2], h = vp[3];
-	if ( w < 2 || h < 2 || !ensure_targets ( w, h ) )
+	if ( vp[2] < 2 || vp[3] < 2 )
+		return false;
+
+	GLfloat proj[16];
+	glGetFloatv ( GL_PROJECTION_MATRIX, proj );
+
+	//How big one splat comes out on screen at the distance the camera is looking,
+	//and from that, how much of the window the offscreen buffers need. See
+	//SP_TARGET_SPLAT_PX.
+	const float px_at_focus = ( float ) vp[3] * proj[5] * radius
+	                          / ( focus > 0.0f ? focus : 1.0f );   //P[1][1]
+	float scale = SP_TARGET_SPLAT_PX / ( px_at_focus > 0.01f ? px_at_focus : 0.01f );
+	if ( scale > 1.0f )       scale = 1.0f;
+	if ( scale < SP_MIN_SCALE ) scale = SP_MIN_SCALE;
+	int w = ( int ) ( vp[2]*scale ), h = ( int ) ( vp[3]*scale );
+	if ( w < 2 ) w = 2;
+	if ( h < 2 ) h = 2;
+	if ( !ensure_targets ( w, h ) )
 		return false;
 
 	GLint old_fbo = 0;
@@ -772,12 +815,10 @@ bool screenspace_render ( const float * positions, unsigned long count,
 	// 3 - smooth the depth, x then y, as many times as asked
 	glUseProgram ( g_sp_blur );
 	{
-		GLfloat proj[16];
-		glGetFloatv ( GL_PROJECTION_MATRIX, proj );
-		const float proj_scale = ( float ) h * proj[5];   //P[1][1]
+		const float proj_scale = ( float ) h * proj[5];   //P[1][1], in buffer pixels
 		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uProjScale" ), proj_scale );
 		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uWorldRadius" ), radius );
-		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uMaxRadiusPx" ), 24.0f );
+		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uMaxRadiusPx" ), SP_MAX_BLUR_PX );
 		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uDepthFalloff" ), 1.0f / ( 2.0f*radius ) );
 		glUniform1f ( glGetUniformLocation ( g_sp_blur, "uEmpty" ), SP_EMPTY*0.5f );
 	}
@@ -801,6 +842,7 @@ bool screenspace_render ( const float * positions, unsigned long count,
 	glUniform2f ( glGetUniformLocation ( g_sp_comp, "uViewport" ), ( float ) w, ( float ) h );
 	glUniform1f ( glGetUniformLocation ( g_sp_comp, "uWorldRadius" ), radius );
 	glUniform1f ( glGetUniformLocation ( g_sp_comp, "uEmpty" ), SP_EMPTY*0.5f );
+	glUniform1f ( glGetUniformLocation ( g_sp_comp, "uLit" ), lit ? 1.0f : 0.0f );
 	glEnable ( GL_DEPTH_TEST );
 	glDepthMask ( GL_TRUE );
 	glEnable ( GL_BLEND );
