@@ -1,8 +1,6 @@
 #include "fluid.h"
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 #include "bicubic_bezier_surface.h"
+#include "simthread.h"
 #include <math.h>
 
 #include <fstream>
@@ -113,14 +111,11 @@ Vektor flatnormal ( float a, float b );
 void write_24bitbmp ( const char * filename, unsigned char * pixelinfo );
 void read_24bitbmp ( const char * filename, unsigned char ** pixelinfo, unsigned long & width, unsigned long & height );
 
-float ** vertex_array_pointer, ** normal_array_pointer;
-unsigned long vn_arraylength, vn_count;
-
-unsigned int ** index_array_pointer;
-unsigned long index_arraylength;
-
-float ** particle_coords_pointer, ** particle_colors_pointer;
-unsigned long cc_arraylength;
+//What is on screen: one consistent view of the fluid, taken by the solver
+//thread between two of its steps and handed over here. The viewer used to own
+//these arrays and fill them itself from inside the display callback; now it
+//only reads the newest one the solver has published. See simthread.h.
+const FluidSnapshot * shown = 0;
 
 //float g_normal_length = 1;
 
@@ -172,13 +167,18 @@ static void usage ( const char * argv0 )
 	"\n"
 	"  -n, --particles N   how much liquid to drop, in particles (default 1875).\n"
 	"                      The scene is one tetrahedron; this scales it.\n"
-	"  -t, --threads N     OpenMP threads (default: as many as the machine has)\n"
+	"  -t, --threads N     OpenMP threads for the solver (default: as many as\n"
+	"                      the machine has)\n"
 	"  -r, --run           start running instead of paused\n"
 	"  -s, --surface       start with the marching-cubes surface on\n"
 	"  -F, --flat          do not tessellate the surface (PN triangles are on by\n"
 	"                      default wherever the driver has OpenGL 4)\n"
 	"  -S, --screenspace   draw the water with screen-space fluid rendering\n"
 	"                      instead of particle dots - no mesh at all\n"
+	"  -H, --sim-rate N    hold the solver to N steps per second (default: as\n"
+	"                      many as it can take). The solver runs in a thread of\n"
+	"                      its own and is not tied to the frame rate either way;\n"
+	"                      at the default timestep, -H 250 is real time.\n"
 	"  -h, --help          this\n"
 	"\n"
 	"To go past the built-in cap of particles the simulation can hold, set\n"
@@ -194,6 +194,7 @@ int main ( int argc,char** argv )
 
 	unsigned long wanted_particles = LIQUID_PARTICLES_DEFAULT;
 	int wanted_threads = 0;
+	float wanted_sim_rate = 0.0f;   //0: as fast as the solver can go
 	for ( i=1; i<argc; ++i )
 	{
 		string a = argv[i];
@@ -209,6 +210,8 @@ int main ( int argc,char** argv )
 			tessellation_on = false;
 		else if ( a=="-S" || a=="--screenspace" )
 			screenspace_on = true;
+		else if ( ( a=="-H" || a=="--sim-rate" ) && i+1<argc )
+			wanted_sim_rate = ( float ) atof ( argv[++i] );
 		else if ( a=="-h" || a=="--help" )
 		{
 			usage ( argv[0] );
@@ -223,26 +226,6 @@ int main ( int argc,char** argv )
 		     << f.maxparticlecount() << ". Set FLUIDSIM_MAX_PARTICLES higher." << endl;
 		wanted_particles = f.maxparticlecount();
 	}
-#ifdef _OPENMP
-	if ( wanted_threads > 0 )
-		omp_set_num_threads ( wanted_threads );
-#endif
-
-	vertex_array_pointer=new float*;
-	normal_array_pointer=new float*;
-	*vertex_array_pointer = new float[100];
-	*normal_array_pointer = new float[100];
-	vn_arraylength=10;
-
-	index_array_pointer=new unsigned int*;
-	*index_array_pointer = new unsigned int[100];
-	index_arraylength=10;
-
-	particle_coords_pointer=new float*;
-	particle_colors_pointer=new float*;
-	*particle_coords_pointer = new float[100];
-	*particle_colors_pointer = new float[100];
-	cc_arraylength=10;
 
 	rawdata=new unsigned char*;
 	*rawdata=new unsigned char[10000];
@@ -338,6 +321,15 @@ int main ( int argc,char** argv )
 	cout << f.movingparticlecount() << " liquid particles, "
 	     << f.boundaryparticlecount() << " control particles." << endl;
 
+	//The solver gets a thread of its own, and everything the command line said
+	//about how it should run. From here on it is the only thread that advances
+	//f; the viewer reads what it publishes, and otherwise only the handful of
+	//things about f that never change once the scene is built.
+	sim_set_dt ( speed );
+	sim_set_paused ( paused );
+	sim_set_rate_limit ( wanted_sim_rate );
+	sim_start ( f, wanted_threads );
+
 	glutInit ( &argc, argv );
 	initMain();
 #ifdef WIN32
@@ -346,13 +338,7 @@ int main ( int argc,char** argv )
 	glutTimerFunc ( 10,zeitgeber, 10 );
 	glutMainLoop ();
 
-	delete [] *vertex_array_pointer;
-	delete [] *normal_array_pointer;
-//	delete [] *color_array_pointer;
-	delete [] *index_array_pointer;
-	delete [] *particle_coords_pointer;
-	delete [] *particle_colors_pointer;
-
+	sim_stop();
 	exit ( 554 );
 
 	return 1;
@@ -597,30 +583,28 @@ void initCallLists ( void )
 void PrintVolumeOfClosedSurface()
 {
 	unsigned long i;
-	float * va;
-	unsigned int * ia;
+	const float * va;
+	const unsigned int * ia;
 	float volume,dv;
-	va = ( *vertex_array_pointer );
-	ia = ( *index_array_pointer );
-	volume = 0;
-	if ( showcells )
-	{
-		for ( i=0;i<trianglecount;i++ )
-		{
-			dv =		va[3*ia[3*i+0]+0] * va[3*ia[3*i+1]+1] * va[3*ia[3*i+2]+2] +
-			      va[3*ia[3*i+1]+0] * va[3*ia[3*i+2]+1] * va[3*ia[3*i+0]+2] +
-			      va[3*ia[3*i+2]+0] * va[3*ia[3*i+0]+1] * va[3*ia[3*i+1]+2] -
-			      va[3*ia[3*i+2]+0] * va[3*ia[3*i+1]+1] * va[3*ia[3*i+0]+2] -
-			      va[3*ia[3*i+1]+0] * va[3*ia[3*i+0]+1] * va[3*ia[3*i+2]+2] -
-			      va[3*ia[3*i+0]+0] * va[3*ia[3*i+2]+1] * va[3*ia[3*i+1]+2];
-			volume -=dv;
-		}
-		cout << "Actual Surface encloses " << ( volume * 1000 ) << " liters" << endl;
-	}
-	else
+	if ( !showcells || !shown || !shown->has_surface )
 	{
 		cout << "Without Surfacevisualisation, surface is not calculated and thus makes no sence beeing asked its volume." << endl;
+		return;
 	}
+	va = shown->vertices;
+	ia = shown->indices;
+	volume = 0;
+	for ( i=0;i<shown->trianglecount;i++ )
+	{
+		dv =		va[3*ia[3*i+0]+0] * va[3*ia[3*i+1]+1] * va[3*ia[3*i+2]+2] +
+		      va[3*ia[3*i+1]+0] * va[3*ia[3*i+2]+1] * va[3*ia[3*i+0]+2] +
+		      va[3*ia[3*i+2]+0] * va[3*ia[3*i+0]+1] * va[3*ia[3*i+1]+2] -
+		      va[3*ia[3*i+2]+0] * va[3*ia[3*i+1]+1] * va[3*ia[3*i+0]+2] -
+		      va[3*ia[3*i+1]+0] * va[3*ia[3*i+0]+1] * va[3*ia[3*i+2]+2] -
+		      va[3*ia[3*i+0]+0] * va[3*ia[3*i+2]+1] * va[3*ia[3*i+1]+2];
+		volume -=dv;
+	}
+	cout << "Actual Surface encloses " << ( volume * 1000 ) << " liters" << endl;
 }
 void kbf ( unsigned char key,int x, int y )
 {
@@ -634,10 +618,12 @@ void kbf ( unsigned char key,int x, int y )
 			break;
 		case '*' :
 			speed*=1.1;
+			sim_set_dt ( speed );
 			cout << "Speed = " << speed << endl;
 			break;
 		case '/' :
 			speed/=1.1;
+			sim_set_dt ( speed );
 			cout << "Speed = " << speed << endl;
 			break;
 		case 9 ://tab-key
@@ -694,6 +680,7 @@ void kbf ( unsigned char key,int x, int y )
 			break;
 		case 'p' :
 			paused = !paused;
+			sim_set_paused ( paused );
 			break;
 			/*    case 'n' :
 			        f.deb_colliderecording() ? f.deb_hidecollide() : f.deb_showcollide();
@@ -711,19 +698,24 @@ void kbf ( unsigned char key,int x, int y )
 			glPolygonMode ( GL_FRONT_AND_BACK,GL_LINE );
 			break;
 		case 'o' :
-			unsigned int i;
-			cout << vn_arraylength << endl;
-			for ( i=0;i<vn_count;++i )
+		{
+			if ( !shown || !shown->has_surface )
+				break;
+			const float * va = shown->vertices;
+			const float * na = shown->normals;
+			cout << shown->vn_alloc << endl;
+			for ( unsigned long i=0;i<shown->vn_count;++i )
 			{
 				float l;
-				l = sqrt ( ( *normal_array_pointer ) [3*i+1]* ( *normal_array_pointer ) [3*i+1]+ ( *normal_array_pointer ) [3*i]* ( *normal_array_pointer ) [3*i]+ ( *normal_array_pointer ) [3*i+2]* ( *normal_array_pointer ) [3*i+2] );
-				printf ( "V %f %f %f %f %f %f 0.5 0.5\n", ( *vertex_array_pointer ) [3*i+1], ( *vertex_array_pointer ) [3*i], ( *vertex_array_pointer ) [3*i+2], ( *normal_array_pointer ) [3*i+1]/l, ( *normal_array_pointer ) [3*i]/l, ( *normal_array_pointer ) [3*i+2]/l );
+				l = sqrt ( na[3*i+1]*na[3*i+1]+na[3*i]*na[3*i]+na[3*i+2]*na[3*i+2] );
+				printf ( "V %f %f %f %f %f %f 0.5 0.5\n", va[3*i+1], va[3*i], va[3*i+2], na[3*i+1]/l, na[3*i]/l, na[3*i+2]/l );
 			}
-			for ( i=0;i<trianglecount*3;++i )
+			for ( unsigned long i=0;i<shown->trianglecount*3;++i )
 			{
-				printf ( "I %lu\n", ( *index_array_pointer ) [i] );
+				printf ( "I %u\n", shown->indices[i] );
 			}
 			break;
+		}
 		case 27  :
 //#ifdef debug
 //     timechecker(10);
@@ -814,12 +806,11 @@ void kbuf2 ( int key,int x, int y )
 }
 void DisplayMain ( void )
 {
-	static int talt = glutGet ( GLUT_ELAPSED_TIME );
-	//float dt;
-	int t = glutGet ( GLUT_ELAPSED_TIME );
-	talt = t;
-	if ( !paused )
-		f.progress ( speed );
+	//The solver runs on its own thread (simthread.cpp) and this takes the newest
+	//state it has published, then asks it for the next one. Nothing here steps
+	//the simulation any more, so the vertical retrace this function ends on no
+	//longer decides how fast the fluid moves.
+	shown = sim_acquire_snapshot ( showcells );
 
 	if ( showlight )
 		glEnable ( GL_LIGHTING );
@@ -848,22 +839,16 @@ void DisplayMain ( void )
 //					glNormalPointer(3, GL_FLOAT, 0, normal);
 //					glTexCoordPointer(2, GL_FLOAT, 0,texcoord);
 	//					glDrawElements(GL_TRIANGLES,vertexcount / 3, GL_UNSIGNED_INT, indices);
-	if ( showcells )
+	if ( showcells && shown && shown->has_surface )
 	{
 		//glCallList(BOX);
 		//glCallList(GROUND);
 
-		trianglecount = f.get_surfacegrid (
-		                    vertex_array_pointer,
-		                    normal_array_pointer,
-		                    vn_arraylength,
-		                    vn_count,
-		                    index_array_pointer,
-		                    index_arraylength );
+		trianglecount = shown->trianglecount;
 		glEnableClientState ( GL_VERTEX_ARRAY );
 		glEnableClientState ( GL_NORMAL_ARRAY );
-		glVertexPointer ( 3, GL_FLOAT, 0, *vertex_array_pointer );
-		glNormalPointer ( GL_FLOAT, 0, *normal_array_pointer );
+		glVertexPointer ( 3, GL_FLOAT, 0, shown->vertices );
+		glNormalPointer ( GL_FLOAT, 0, shown->normals );
 //#ifdef debug
 //		glEnableClientState(GL_COLOR_ARRAY );
 //		glColorPointer(3, GL_FLOAT, 3*sizeof(GLfloat), *normal_array_pointer);
@@ -880,12 +865,12 @@ void DisplayMain ( void )
 		if ( tess )
 		{
 			surface_tessellation_bind ( tess_pixels_per_segment, tess_max_level );
-			glDrawElements ( GL_PATCHES, 3*trianglecount, GL_UNSIGNED_INT, *index_array_pointer );
+			glDrawElements ( GL_PATCHES, 3*trianglecount, GL_UNSIGNED_INT, shown->indices );
 			surface_tessellation_unbind();
 		}
 		else
 		{
-			glDrawElements ( GL_TRIANGLES, 3*trianglecount, GL_UNSIGNED_INT, *index_array_pointer );
+			glDrawElements ( GL_TRIANGLES, 3*trianglecount, GL_UNSIGNED_INT, shown->indices );
 		}
 		//glDrawArrays(GL_POINTS,0,vertexcount);
 		/*glBegin(GL_LINES);
@@ -895,11 +880,11 @@ void DisplayMain ( void )
 		if ( shownormals )
 		{
 			glDisable ( GL_LIGHTING );
-			float *tmp_norm=*normal_array_pointer;
-			float *tmp_vert=*vertex_array_pointer;
+			const float *tmp_norm=shown->normals;
+			const float *tmp_vert=shown->vertices;
 			glBegin ( GL_LINES );
 			glColor4f ( 1.0f,0.86f,0.86f,1.0f );
-			for ( unsigned long i=0; i<vn_count; i++ )
+			for ( unsigned long i=0; i<shown->vn_count; i++ )
 			{
 				glVertex3f ( tmp_vert[3*i+0],tmp_vert[3*i+1],tmp_vert[3*i+2] );
 				glVertex3f ( tmp_vert[3*i+0]+tmp_norm[3*i+0]*1.01f,tmp_vert[3*i+1]+tmp_norm[3*i+1]*1.01f,tmp_vert[3*i+2]+tmp_norm[3*i+2]*1.01f );
@@ -914,12 +899,10 @@ void DisplayMain ( void )
 	//Screen-space fluid takes the place of the particle dots: it is the same
 	//particles, drawn as a surface instead of as points. Drawn further down,
 	//after the rest of the scene, because it is transparent.
-	if ( !( screenspace_on && screenspace_available() ) && showparticles )
+	if ( !( screenspace_on && screenspace_available() ) && showparticles && shown )
 	{
-		f.get_particlearray ( particle_coords_pointer/*,particle_colors_pointer*/, cc_arraylength );
-
 		/* set up the array data */
-		glVertexPointer ( 3, GL_FLOAT, 3*sizeof ( GLfloat ), *particle_coords_pointer );
+		glVertexPointer ( 3, GL_FLOAT, 3*sizeof ( GLfloat ), shown->particles );
 		//glColorPointer(3, GL_FLOAT, 3*sizeof(GLfloat), *particle_colors_pointer);
 
 		/* enable vertex arrays */
@@ -928,7 +911,7 @@ void DisplayMain ( void )
 		//glEnableClientState( GL_COLOR_ARRAY );
 
 		/* draw a polygon using the arrays sequentially */
-		glDrawArrays ( GL_POINTS,0,f.particlecount() );
+		glDrawArrays ( GL_POINTS,0,shown->particlecount );
 	}
 	glDisable ( GL_LIGHTING );
 	glCallList ( BOX );
@@ -948,10 +931,9 @@ void DisplayMain ( void )
 	//Last, because the water is transparent and has to be composited over
 	//whatever is behind it. Drawn any earlier it blends against the cleared
 	//background instead of against the scene, and comes out dark.
-	if ( screenspace_on && screenspace_available() )
+	if ( screenspace_on && screenspace_available() && shown )
 	{
-		f.get_particlearray ( particle_coords_pointer, cc_arraylength );
-		screenspace_render ( *particle_coords_pointer, f.movingparticlecount(),
+		screenspace_render ( shown->particles, shown->movingparticlecount,
 		                     f.particleradius() *screenspace_radius, screenspace_smoothing );
 	}
 
@@ -987,7 +969,10 @@ void zeitgeber ( int value )
 	if ( ( sekunden+1 ) *1000 <= t )
 	{
 
-		cout << sekunden << ". Sekunde: " << framecount << "frames, " << f.particlecount() << " particles, " << f.movingparticlecount() << " moving particles, " << trianglecount << "triangles." << endl;
+		cout << sekunden << ". Sekunde: " << framecount << "frames, "
+		     << sim_steps_since_last_call() << " steps, "
+		     << f.particlecount() << " particles, " << f.movingparticlecount()
+		     << " moving particles, " << trianglecount << "triangles." << endl;
 		trianglecount=0;
 		sekunden ++;
 		framecount = 0;

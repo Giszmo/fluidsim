@@ -180,7 +180,10 @@ inline float _max ( float a, float b )
 	return ( a<b ) ?b:a;
 }
 
-int compare ( const void * a, const void * b )
+//inline, because fluid.h is included by more than one translation unit now:
+//the solver runs on its own thread, in simthread.cpp, and main.cpp still needs
+//the class for its own declarations.
+inline int compare ( const void * a, const void * b )
 {
 	return ( ( unsigned __int64 * ) a > ( unsigned __int64 * ) b ) ?1:-1;
 }
@@ -2643,7 +2646,7 @@ class Fluid
 //    { 8, 0, 3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
 //    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
 //};
-int Fluid::triTable[256][19] =
+inline int Fluid::triTable[256][19] =
 {
 	{-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
 	{8,0,3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},//1

@@ -70,17 +70,18 @@ makefile. There is no Boost dependency any more.
 | Option | |
 |---|---|
 | `-n N` | how much liquid to drop, in particles (default 1875). The scene is one tetrahedron and this scales it |
-| `-t N` | OpenMP threads (default: as many as the machine has) |
+| `-t N` | OpenMP threads for the solver (default: as many as the machine has) |
 | `-r` | start running instead of paused |
 | `-s` | start with the marching-cubes surface on |
 | `-F` | draw the surface as flat triangles; PN triangle tessellation is on by default wherever the driver has OpenGL 4 |
 | `-S` | draw the water with screen-space fluid rendering instead of particle dots — no mesh at all |
+| `-H N` | hold the solver to N steps per second (default: as many as it can take). At the default dt of 0.004, `-H 250` is wall-clock real time |
 | `FLUIDSIM_MAX_PARTICLES` | capacity, default 150 000. It has to be an environment variable because the `Fluid` is a global and is built before `main()` sees the command line |
 
 The simulation starts **paused**; press `p` to run it. Moving the mouse over the window
-rotates the camera. It prints a frames/particles line per second to stdout — about
-1 400 fps on the default scene on a 2026 desktop CPU, software-rendered, and around
-50 at 100 000 particles.
+rotates the camera. It prints a line per second to stdout with **both** rates in it —
+frames drawn and solver steps taken — because since the solver got a thread of its own
+those are two different numbers; see below.
 
 | Key | |
 |---|---|
@@ -108,10 +109,49 @@ liquid dropped from above. **All the barrier, teleport and extra set-speed geome
 `main()` is commented out**, so the default scene contains no walls — worth knowing
 before concluding that barrier collision does not work.
 
-## How fast it is
+## The simulation is not tied to the frame rate
 
-The viewer advances the simulation by one `progress()` call per frame at dt=0.004, so
-the honest unit is **simulation steps per second**: 25–30 of them is what "smooth"
+It used to be. `DisplayMain()` was both the display callback and the idle callback, and
+it called `progress()` once, so the program took exactly one simulation step per drawn
+frame — and `glutSwapBuffers()` blocks until the next vertical retrace. On an ordinary
+screen that is 60 steps a second whatever the machine could have done, and on a slow
+frame it is fewer.
+
+The solver runs in a thread of its own now (`simthread.cpp`) and steps as fast as it
+can. It publishes a **snapshot** — the particle positions, and the marching-cubes
+surface when the viewer is drawing one — whenever the renderer asks for the next one,
+and only then, so the mesh is built once per drawn frame rather than once per step.
+Three snapshots rotate between the two threads, so neither waits for the other: the
+solver fills one while the renderer draws another. Everything that touches the `Fluid`
+happens on the solver thread; the renderer only ever reads a published snapshot, which
+nothing writes to while it holds it.
+
+What that is worth, 20 000 particles with the surface on, software-rendered on this
+20-core box, `-t 8`, measured from the per-second line:
+
+| | steps/s | frames/s |
+|---|---|---|
+| the previous build, one step per frame | 55 | 55 |
+| the solver on its own thread | **530–900** | 6–12 |
+
+The frame rate falls because the two now compete for the same cores *and* because the
+fluid gets ten times as far in the same wall second, so there is ten times as much
+surface to draw. On a machine with a real GPU the renderer costs almost no CPU and that
+trade does not arise.
+
+Two consequences worth knowing:
+
+- **The water moves faster in wall-clock time**, because a step is still dt=0.004 of
+  simulated time and there are now many more of them per second. `-H N` caps the step
+  rate; at the default dt, `-H 250` is exactly real time, and `-H 60` is what a 60Hz
+  screen used to impose.
+- **`-t` applies to the solver thread.** OpenMP's thread count is a property of the
+  thread that enters the parallel region, not of the program, so it is set from inside
+  the solver thread; `OMP_NUM_THREADS` works as before.
+
+## How fast the solver itself is
+
+The honest unit is **simulation steps per second**: 25–30 of them is what "smooth"
 meant in 2005, and still does.
 
 Headless, a dense block of liquid (the worst case — every particle has a full
