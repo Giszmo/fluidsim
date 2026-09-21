@@ -1,6 +1,7 @@
 #include "fluid.h"
 #include "bicubic_bezier_surface.h"
 #include "simthread.h"
+#include "scenes.h"
 #include <math.h>
 
 #include <fstream>
@@ -76,9 +77,6 @@ bool shownormals= false;
 unsigned short framecount=0;
 unsigned long trianglecount=0;
 bool showcells = false;
-// The default tetrahedron of liquid comes to exactly this many particles; -n
-// scales it from here.
-#define LIQUID_PARTICLES_DEFAULT 1875
 bool showparticles = true;
 //PN triangles on the surface. In 2005 this was TRUFORM, an ATI extension that
 //no driver has any more; today it is the OpenGL 4 tessellation stage doing the
@@ -105,12 +103,19 @@ float screenspace_radius = 1.5f;
 //reach anywhere.
 int screenspace_smoothing = 2;
 bool showlight = false;
+//The ground and the box the cells span. The ground was built into a display
+//list in 2005 and then never drawn - the call was commented out - which is why
+//the bowl has only ever been visible as the shape the water settles into. The
+//box is the extent of the cell grid and nothing else: no particle is ever
+//tested against it. It used to be drawn as a solid triangle strip through the
+//eight corners, which comes out as three filled walls that the water appears
+//to rest on; it is a wireframe now, which is what a reference box should be.
+bool showground = true;
+bool showbox = true;
+//Which scene is running. Set from -X/--scene before the window exists.
+const Scene * scene = 0;
 float groundlevel ( float a, float b );
 Vektor groundlevelnormal ( float a, float b );
-float sink ( float a, float b );
-Vektor sinknormal ( float a, float b );
-float flat ( float a, float b );
-Vektor flatnormal ( float a, float b );
 void write_24bitbmp ( const char * filename, unsigned char * pixelinfo );
 void read_24bitbmp ( const char * filename, unsigned char ** pixelinfo, unsigned long & width, unsigned long & height );
 
@@ -168,8 +173,10 @@ static void usage ( const char * argv0 )
 	cout <<
 	"usage: " << argv0 << " [options]\n"
 	"\n"
-	"  -n, --particles N   how much liquid to drop, in particles (default 1875).\n"
-	"                      The scene is one tetrahedron; this scales it.\n"
+	"  -X, --scene NAME    which scene to run (default fountain). --scene list\n"
+	"                      names them all.\n"
+	"  -n, --particles N   how much liquid, in particles. The default is what the\n"
+	"                      scene is written for; this scales it.\n"
 	"  -t, --threads N     OpenMP threads for the solver (default: as many as\n"
 	"                      the machine has)\n"
 	"  -r, --run           start running instead of paused\n"
@@ -178,6 +185,12 @@ static void usage ( const char * argv0 )
 	"                      default wherever the driver has OpenGL 4)\n"
 	"  -S, --screenspace   draw the water with screen-space fluid rendering\n"
 	"                      instead of particle dots - no mesh at all\n"
+	"      --slope S       terrain scene: how steeply the channel is tilted\n"
+	"                      (default 0.12)\n"
+	"      --waves W       terrain scene: how deep the ripples along it are\n"
+	"                      (default 1.8). There are dips for water to stand in\n"
+	"                      only while W*0.126 > S; more W is deeper puddles and\n"
+	"                      less running water.\n"
 	"  -H, --sim-rate N    hold the solver to N steps per second (default: as\n"
 	"                      many as it can take). The solver runs in a thread of\n"
 	"                      its own and is not tied to the frame rate either way;\n"
@@ -186,22 +199,49 @@ static void usage ( const char * argv0 )
 	"\n"
 	"To go past the built-in cap of particles the simulation can hold, set\n"
 	"FLUIDSIM_MAX_PARTICLES; it costs memory whether you fill it or not.\n"
-	"Keys are listed in README.md. Example:\n"
+	"Keys are listed in README.md. Examples:\n"
 	"\n"
-	"    FLUIDSIM_MAX_PARTICLES=250000 " << argv0 << " -n 100000 -r\n";
+	"    FLUIDSIM_MAX_PARTICLES=250000 " << argv0 << " -n 100000 -r\n"
+	"    " << argv0 << " -X terrain -n 40000 -r -s\n"
+	"\n"
+	"scenes:\n";
+	scene_list();
 }
 
 int main ( int argc,char** argv )
 {
 	int i,j;
 
-	unsigned long wanted_particles = LIQUID_PARTICLES_DEFAULT;
+	unsigned long wanted_particles = 0;   //0: whatever the scene is written for
 	int wanted_threads = 0;
 	float wanted_sim_rate = 0.0f;   //0: as fast as the solver can go
+	float wanted_slope = 0.0f, wanted_waves = 0.0f;   //0: the scene's own
+	scene = scene_default();
 	for ( i=1; i<argc; ++i )
 	{
 		string a = argv[i];
-		if ( ( a=="-n" || a=="--particles" ) && i+1<argc )
+		if ( ( a=="-X" || a=="--scene" ) && i+1<argc )
+		{
+			string want = argv[++i];
+			if ( want == "list" )
+			{
+				cout << "scenes:" << endl;
+				scene_list();
+				return 0;
+			}
+			scene = scene_by_name ( want.c_str() );
+			if ( !scene )
+			{
+				cout << "no scene called " << want << ". There is:" << endl;
+				scene_list();
+				return 1;
+			}
+		}
+		else if ( a=="--slope" && i+1<argc )
+			wanted_slope = ( float ) atof ( argv[++i] );
+		else if ( a=="--waves" && i+1<argc )
+			wanted_waves = ( float ) atof ( argv[++i] );
+		else if ( ( a=="-n" || a=="--particles" ) && i+1<argc )
 			wanted_particles = strtoul ( argv[++i],0,10 );
 		else if ( ( a=="-t" || a=="--threads" ) && i+1<argc )
 			wanted_threads = atoi ( argv[++i] );
@@ -222,7 +262,7 @@ int main ( int argc,char** argv )
 		}
 	}
 	if ( wanted_particles < 1 )
-		wanted_particles = 1;
+		wanted_particles = scene->natural_particles;
 	if ( wanted_particles > f.maxparticlecount() )
 	{
 		cout << "Asked for " << wanted_particles << " particles but the simulation holds "
@@ -248,79 +288,24 @@ int main ( int argc,char** argv )
 	boden.callf ( 100,100 );
 	boden.interpolate();
 
-	//f.set_height_function(groundlevel);	f.set_height_function_normal(groundlevelnormal);
-	f.set_height_function(sink);	f.set_height_function_normal(sinknormal);
-	//f.set_height_function ( flat );	f.set_height_function_normal ( flatnormal );
-	float testlist[9*1700];
-	int cnt=0;
-/*	for ( j=2;j<6;j++ )
+	//Everything about the run that is not the solver comes from the scene; see
+	//scenes.cpp. Until 2026 there was one of these hard-coded here with the
+	//others commented out in place, so picking one meant an edit and a rebuild.
+	terrain_set ( wanted_slope, wanted_waves );
+	f.set_height_function ( scene->height );
+	f.set_height_function_normal ( scene->height_normal );
+	f.set_ground_restitution ( scene->ground_restitution );
+	scene->build ( f, wanted_particles );
+	distanz = scene->camera_distance;
+	showground = scene->ground_shown;
 	{
-		for ( i=0;i<10;i++ )
-		{
-			testlist[cnt++]=cos ( ( float ) i/10*2*M_PI ) *j*j;		testlist[cnt++]=sin ( ( float ) i/10*2*M_PI ) *j*j;		testlist[cnt++]=15+8*j;
-			testlist[cnt++]=cos ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j;	testlist[cnt++]=sin ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j;	testlist[cnt++]=15+8*j;
-			testlist[cnt++]=cos ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 );	testlist[cnt++]=sin ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 );	testlist[cnt++]=15+8* ( j-1 );
-
-			testlist[cnt++]=cos ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j;	testlist[cnt++]=sin ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j;	testlist[cnt++]=15+8*j;
-			testlist[cnt++]=cos ( ( float ) ( i+1 ) /10*2*M_PI ) * ( j-1 ) * ( j-1 );		testlist[cnt++]=sin ( ( float ) ( i+1 ) /10*2*M_PI ) * ( j-1 ) * ( j-1 );		testlist[cnt++]=15+8* ( j-1 );
-			testlist[cnt++]=cos ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 );	testlist[cnt++]=sin ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 );	testlist[cnt++]=15+8* ( j-1 );
-		}
+		//The scene's own starting view, as the same rotation matrix the mouse
+		//builds up, so moving the mouse carries on from here.
+		double a = scene->camera_pitch*M_PI/180.0, ca = cos ( a ), sa = sin ( a );
+		double r[16] = { 1,0,0,0,  0,ca,sa,0,  0,-sa,ca,0,  0,0,0,1 };
+		for ( int m=0;m<16;++m ) rot[m] = r[m];
 	}
-	f.trianglelist2boundary ( testlist,0,cnt/9-1 );
-	
-	cnt=0;
-	testlist[cnt++]=-3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
-	testlist[cnt++]=3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
-	testlist[cnt++]=-3;	testlist[cnt++]=3;	testlist[cnt++]=23;
-	testlist[cnt++]=-3;	testlist[cnt++]=3;	testlist[cnt++]=23;
-	testlist[cnt++]=3;	testlist[cnt++]=-3;	testlist[cnt++]=23;
-	testlist[cnt++]=3;	testlist[cnt++]=3;	testlist[cnt++]=23;
-	f.trianglelist2shift ( 0,0,-10,testlist,0,1 );
-
-	cnt=0;
-	testlist[cnt++]=15;	testlist[cnt++]=15;	testlist[cnt++]=2;
-	testlist[cnt++]=15;	testlist[cnt++]=15;	testlist[cnt++]=0;
-	testlist[cnt++]=15;	testlist[cnt++]=-15;	testlist[cnt++]=2;
-	testlist[cnt++]=15;	testlist[cnt++]=15;	testlist[cnt++]=0;
-	testlist[cnt++]=15;	testlist[cnt++]=-15;	testlist[cnt++]=0;
-	testlist[cnt++]=15;	testlist[cnt++]=-15;	testlist[cnt++]=2;
-	f.trianglelist2teleport ( 0,0,100,testlist,0,1 );
-
-	cnt=0;
-	testlist[cnt++]=-5;	testlist[cnt++]=-5;	testlist[cnt++]=100;
-	testlist[cnt++]=5;	testlist[cnt++]=-5;	testlist[cnt++]=100;
-	testlist[cnt++]=-5;	testlist[cnt++]=5;	testlist[cnt++]=100;
-	testlist[cnt++]=5;	testlist[cnt++]=-5;	testlist[cnt++]=100;
-	testlist[cnt++]=-5;	testlist[cnt++]=5;	testlist[cnt++]=100;
-	testlist[cnt++]=5;	testlist[cnt++]=5;	testlist[cnt++]=100;
-	f.trianglelist2setspeed ( 0,0,-1,testlist,0,1 );
-*/
-
-	cnt=0;
-	testlist[cnt++]=-2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
-	testlist[cnt++]=-2;	testlist[cnt++]=2;	testlist[cnt++]=0;
-	testlist[cnt++]=2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
-	testlist[cnt++]=2;	testlist[cnt++]=-2;	testlist[cnt++]=0;
-	testlist[cnt++]=-2;	testlist[cnt++]=2;	testlist[cnt++]=0;
-	testlist[cnt++]=2;	testlist[cnt++]=2;	testlist[cnt++]=0;
-	f.trianglelist2setspeed ( 0,0,70,testlist,0,1 );
-
-	// One tetrahedron of liquid above the jet. tetraeder2particle() subdivides it
-	// until each piece holds one particle, so the particle count is proportional
-	// to the volume: scaling the edges by cbrt(N/1875) asks for N particles.
-	{
-		const float v0[3] = { -5,-5,55 };
-		const float e[3][3] = { { 15, 0, 5 }, { 0, 15, 5 }, { 0, 0, 10 } };
-		float s = powf ( ( float ) wanted_particles / ( float ) LIQUID_PARTICLES_DEFAULT,
-		                 1.0f/3.0f );
-		float tetralist[12];
-		for ( i=0;i<3;++i )
-			tetralist[i] = v0[i];
-		for ( j=0;j<3;++j )
-			for ( i=0;i<3;++i )
-				tetralist[3+3*j+i] = v0[i] + e[j][i]*s;
-		f.tetraederlist2liquid ( tetralist,0,0 );
-	}
+	cout << "scene " << scene->name << ": " << scene->summary << endl;
 	cout << f.movingparticlecount() << " liquid particles, "
 	     << f.boundaryparticlecount() << " control particles." << endl;
 
@@ -441,22 +426,10 @@ void write_24bitbmp ( const char * filename, unsigned char * pixelinfo )
 	}
 	stream2.close();
 }
-float sink ( float a, float b )
-{
-	return .05* ( a*a+b*b );
-}
-Vektor sinknormal ( float a, float b )
-{
-	return Vektor ( -.1*a,-.1*b,1 );
-}
-float flat ( float a, float b )
-{
-	return 0.0f;
-}
-Vektor flatnormal ( float a, float b )
-{
-	return Vektor ( 0.0f,0.0f,1.0f );
-}
+//The height field read out of hight100x100.sink.bmp through a bicubic Bezier
+//patch. No scene uses it - the ones that ship are analytic, in scenes.cpp -
+//but the bitmap path is the only way this program can take a terrain from a
+//file, so it stays.
 float groundlevel ( float a, float b )
 {
 	a= ( a-MINX ) / ( MAXX-MINX );
@@ -479,25 +452,36 @@ void initCallLists ( void )
 	float k=M_PI/6;
 	float i,j;
 	float v[3];
-	/*
+	//The funnel, from the same ring numbers scenes.cpp hands the solver, so
+	//what is drawn is what the water hits. In 2005 this block was commented
+	//out while glCallList(TRICHTER) was not, so it called a list that had never
+	//been defined and drew nothing.
 	glNewList ( TRICHTER, GL_COMPILE );
-	for ( j=2;j<6;j++ )
+	if ( scene->draw_funnel )
 	{
-		glBegin ( GL_TRIANGLES );
-		glColor4f ( 1,1,1,1 );
-		for ( i=0;i<10;i++ )
+		//As a wireframe, for the same reason the box is one: filled, it is an
+		//opaque cone with the water inside it.
+		float a[3],b[3];
+		glDisable ( GL_LIGHTING );
+		glBegin ( GL_LINES );
+		glColor4f ( 0.55f,0.55f,0.62f,1 );
+		for ( int jj=1;jj<6;jj++ )
 		{
-			glVertex3f ( cos ( ( float ) i/10*2*M_PI ) *j*j,sin ( ( float ) i/10*2*M_PI ) *j*j,15+8*j );
-			glVertex3f ( cos ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j,sin ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j,15+8*j );
-			glVertex3f ( cos ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 ),sin ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 ),15+8* ( j-1 ) );
-
-			glVertex3f ( cos ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j,sin ( ( float ) ( i+1 ) /10*2*M_PI ) *j*j,15+8*j );
-			glVertex3f ( cos ( ( float ) ( i+1 ) /10*2*M_PI ) * ( j-1 ) * ( j-1 ),sin ( ( float ) ( i+1 ) /10*2*M_PI ) * ( j-1 ) * ( j-1 ),15+8* ( j-1 ) );
-			glVertex3f ( cos ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 ),sin ( ( float ) i/10*2*M_PI ) * ( j-1 ) * ( j-1 ),15+8* ( j-1 ) );
+			for ( int ii=0;ii<10;ii++ )
+			{
+				funnel_ring ( jj,ii,  a );
+				funnel_ring ( jj,ii+1,b );
+				glVertex3fv ( a ); glVertex3fv ( b );
+				if ( jj>1 )
+				{
+					funnel_ring ( jj-1,ii,b );
+					glVertex3fv ( a ); glVertex3fv ( b );
+				}
+			}
 		}
 		glEnd();
 	}
-	glEndList();*/
+	glEndList();
 	glNewList ( KUGELLIST, GL_COMPILE );
 	glMaterialf ( GL_FRONT,GL_SHININESS,50 );
 	for ( i=0;i<M_PI-k;i+=k )
@@ -527,60 +511,90 @@ void initCallLists ( void )
 		glEnd();
 	}
 	glEndList();
+	//The ground, over whatever patch of it the scene says is worth looking at.
+	//It was drawn over a fixed 20% of the domain before, and the call to draw
+	//it was commented out, so the terrain has never actually been on screen.
+	//The colour is baked in rather than lit, because lighting is off by
+	//default and an unlit height field is a flat silhouette.
 	Vektor tmp;
 	glNewList ( GROUND, GL_COMPILE );
-	for ( float i = MINX+0.40* ( MAXX-MINX );i<MINX+0.60* ( MAXX-MINX );i+=0.05* ( MAXX-MINX ) )
 	{
-		glBegin ( GL_TRIANGLE_STRIP );
-		glColor4f ( 1,0,0,1 );
-		for ( float j = MINY+0.40* ( MAXY-MINY );j<MINY+0.60* ( MAXY-MINY );j+=0.05* ( MAXY-MINY ) )
+		const float lx = 0.4360f, ly = 0.3270f, lz = 0.8384f;  //a fixed sun
+		const float dx = ( scene->ground_x1 - scene->ground_x0 ) / scene->ground_nx;
+		const float dy = ( scene->ground_y1 - scene->ground_y0 ) / scene->ground_ny;
+		float zlo = 1e30f, zhi = -1e30f;
+		for ( int a=0;a<=scene->ground_nx;++a )
+			for ( int b=0;b<=scene->ground_ny;++b )
+			{
+				float z = f.height_function ( scene->ground_x0+a*dx, scene->ground_y0+b*dy );
+				if ( z<zlo ) zlo=z;
+				if ( z>zhi ) zhi=z;
+			}
+		if ( zhi-zlo < 1e-3f )
+			zhi = zlo + 1;
+		for ( int a=0;a<scene->ground_nx;++a )
 		{
-			tmp=f.height_function_normal ( i,j ).normed();
-			glNormal3f ( tmp.x(),tmp.y(),tmp.z() );
-			glVertex3f ( i,j,f.height_function ( i,j ) );
-			tmp=f.height_function_normal ( i+0.05* ( MAXX-MINX ),j ).normed();
-			glNormal3f ( tmp.x(),tmp.y(),tmp.z() );
-			glVertex3f ( i+0.05* ( MAXX-MINX ),j,f.height_function ( i+0.05* ( MAXX-MINX ),j ) );
+			glBegin ( GL_TRIANGLE_STRIP );
+			for ( int b=0;b<=scene->ground_ny;++b )
+			{
+				for ( int e=0;e<2;++e )
+				{
+					float x = scene->ground_x0 + ( a+e ) *dx;
+					float y = scene->ground_y0 + b*dy;
+					float z = f.height_function ( x,y );
+					Vektor n = f.height_function_normal ( x,y ).normed();
+					float lit = 0.45f + 0.55f* ( n.x() *lx + n.y() *ly + n.z() *lz );
+					if ( lit < 0 ) lit = 0;
+					float t = ( z-zlo ) / ( zhi-zlo );
+					glNormal3f ( n.x(),n.y(),n.z() );
+					glColor4f ( ( 0.30f+0.45f*t ) *lit, ( 0.34f+0.30f*t ) *lit, ( 0.26f+0.28f*t ) *lit, 1 );
+					glVertex3f ( x,y,z );
+				}
+			}
+			glEnd();
 		}
-		glEnd();
 	}
 	glEndList();
 
 	glNewList ( GROUND_NORMALS, GL_COMPILE );
-	for ( float i = MINX+0.40* ( MAXX-MINX );i<MINX+0.60* ( MAXX-MINX );i+=0.05* ( MAXX-MINX ) )
 	{
+		const float dx = ( scene->ground_x1 - scene->ground_x0 ) / scene->ground_nx;
+		const float dy = ( scene->ground_y1 - scene->ground_y0 ) / scene->ground_ny;
 		glBegin ( GL_LINES );
 		glColor4f ( 0,1,0,1 );
-		for ( float j = MINY+0.40* ( MAXY-MINY );j<MINY+0.60* ( MAXY-MINY );j+=0.05* ( MAXY-MINY ) )
-		{
-			Vektor tmp=f.height_function_normal ( i,j ).norm ( 0.5f );
-			glVertex3f ( i,j,f.height_function ( i,j ) );
-			glVertex3f ( i+tmp.x(),j+tmp.y(),f.height_function ( i,j ) +tmp.z() );
-		}
+		for ( int a=0;a<=scene->ground_nx;a+=4 )
+			for ( int b=0;b<=scene->ground_ny;b+=4 )
+			{
+				float x = scene->ground_x0 + a*dx, y = scene->ground_y0 + b*dy;
+				Vektor n = f.height_function_normal ( x,y ).norm ( 0.03f* ( scene->ground_x1-scene->ground_x0 ) );
+				glVertex3f ( x,y,f.height_function ( x,y ) );
+				glVertex3f ( x+n.x(),y+n.y(),f.height_function ( x,y ) +n.z() );
+			}
 		glEnd();
 	}
 	glEndList();
 
+	//The extent of the cell grid, as twelve lines. It used to be a triangle
+	//strip through the eight corners, which is three filled walls: opaque,
+	//pastel, and close enough behind the water to look like a floor the
+	//particles are resting on. Nothing in the solver ever tests a particle
+	//against it - it is a ruler, not a wall.
 	glNewList ( BOX, GL_COMPILE );
-	glMaterialf ( GL_FRONT,GL_SHININESS,50 );
-	glColor3f ( 1,1,1 );
-	glBegin ( GL_TRIANGLE_STRIP );
-	glVertex3f ( f.minxyz().x(),f.minxyz().y(),f.minxyz().z() );
-	glColor3f ( 1,1,0.8 );
-	glVertex3f ( f.minxyz().x(),f.minxyz().y(),f.maxxyz().z() );
-	glColor3f ( 1,0.8,1 );
-	glVertex3f ( f.maxxyz().x(),f.minxyz().y(),f.minxyz().z() );
-	glColor3f ( 0.8,1,1 );
-	glVertex3f ( f.maxxyz().x(),f.minxyz().y(),f.maxxyz().z() );
-	glColor3f ( 1,0.8,0.8 );
-	glVertex3f ( f.maxxyz().x(),f.maxxyz().y(),f.minxyz().z() );
-	glColor3f ( 0.8,1,0.8 );
-	glVertex3f ( f.maxxyz().x(),f.maxxyz().y(),f.maxxyz().z() );
-	glColor3f ( 1,0.8,0.8 );
-	glVertex3f ( f.minxyz().x(),f.maxxyz().y(),f.minxyz().z() );
-	glColor3f ( 1,1,1 );
-	glVertex3f ( f.minxyz().x(),f.maxxyz().y(),f.maxxyz().z() );
-	glEnd();
+	{
+		Vektor lo = f.minxyz(), hi = f.maxxyz();
+		const float xs[2] = { lo.x(),hi.x() }, ys[2] = { lo.y(),hi.y() }, zs[2] = { lo.z(),hi.z() };
+		glDisable ( GL_LIGHTING );
+		glColor4f ( 0.35f,0.35f,0.40f,1 );
+		glBegin ( GL_LINES );
+		for ( int b=0;b<2;++b )
+			for ( int c=0;c<2;++c )
+			{
+				glVertex3f ( xs[0],ys[b],zs[c] ); glVertex3f ( xs[1],ys[b],zs[c] );
+				glVertex3f ( xs[b],ys[0],zs[c] ); glVertex3f ( xs[b],ys[1],zs[c] );
+				glVertex3f ( xs[b],ys[c],zs[0] ); glVertex3f ( xs[b],ys[c],zs[1] );
+			}
+		glEnd();
+	}
 	glEndList();
 }
 void PrintVolumeOfClosedSurface()
@@ -644,6 +658,14 @@ void kbf ( unsigned char key,int x, int y )
 			break;
 		case 'c' :
 			showcells = !showcells;
+			if ( showcells && screenspace_on && screenspace_available() )
+				cout << "the marching-cubes surface is on, but screen-space is drawing the water; S to go back to it" << endl;
+			break;
+		case 'b' :
+			showground = !showground;
+			break;
+		case 'B' :
+			showbox = !showbox;
 			break;
 		case 'e' :
 			glPolygonMode ( GL_FRONT,GL_FILL );
@@ -673,7 +695,8 @@ void kbf ( unsigned char key,int x, int y )
 				screenspace_on = false;
 			}
 			else
-				cout << "screen-space fluid " << ( screenspace_on ? "on" : "off" ) << endl;
+				cout << "screen-space fluid " << ( screenspace_on ? "on" : "off" )
+				     << ( screenspace_on && showcells ? " (the marching-cubes surface is off while it is)" : "" ) << endl;
 			break;
 		case 'T' :
 			tess_max_level *= 2.0f;
@@ -813,7 +836,14 @@ void DisplayMain ( void )
 	//state it has published, then asks it for the next one. Nothing here steps
 	//the simulation any more, so the vertical retrace this function ends on no
 	//longer decides how fast the fluid moves.
-	shown = sim_acquire_snapshot ( showcells );
+	//Screen-space fluid and the marching-cubes surface are two ways of drawing
+	//the same water, not two things to draw, so the one that is on wins and the
+	//other is not built at all. Asking the solver for no surface is what makes
+	//-S cheap: it is the mesh rebuild, once per frame, that screen-space exists
+	//to avoid.
+	const bool screenspace = screenspace_on && screenspace_available();
+	const bool surface = showcells && !screenspace;
+	shown = sim_acquire_snapshot ( surface );
 
 	if ( showlight )
 		glEnable ( GL_LIGHTING );
@@ -842,11 +872,8 @@ void DisplayMain ( void )
 //					glNormalPointer(3, GL_FLOAT, 0, normal);
 //					glTexCoordPointer(2, GL_FLOAT, 0,texcoord);
 	//					glDrawElements(GL_TRIANGLES,vertexcount / 3, GL_UNSIGNED_INT, indices);
-	if ( showcells && shown && shown->has_surface )
+	if ( surface && shown && shown->has_surface )
 	{
-		//glCallList(BOX);
-		//glCallList(GROUND);
-
 		trianglecount = shown->trianglecount;
 		glEnableClientState ( GL_VERTEX_ARRAY );
 		glEnableClientState ( GL_NORMAL_ARRAY );
@@ -902,7 +929,7 @@ void DisplayMain ( void )
 	//Screen-space fluid takes the place of the particle dots: it is the same
 	//particles, drawn as a surface instead of as points. Drawn further down,
 	//after the rest of the scene, because it is transparent.
-	if ( !( screenspace_on && screenspace_available() ) && showparticles && shown )
+	if ( !screenspace && showparticles && shown )
 	{
 		/* set up the array data */
 		glVertexPointer ( 3, GL_FLOAT, 3*sizeof ( GLfloat ), shown->particles );
@@ -914,11 +941,31 @@ void DisplayMain ( void )
 		//glEnableClientState( GL_COLOR_ARRAY );
 
 		/* draw a polygon using the arrays sequentially */
-		glDrawArrays ( GL_POINTS,0,shown->particlecount );
+		//Water-coloured rather than white: on a terrain scene a thin sheet of
+		//white dots on pale ground is invisible, and the thin sheet is the
+		//interesting part. The control particles - the barriers, teleports,
+		//shifts and set-speed patches the scene is built out of - come after
+		//the moving ones in the same array and are drawn dim, so that a scene
+		//with two thousand of them shows its plumbing without burying the water
+		//in it.
+		glColor3f ( 0.55f,0.80f,1.0f );
+		glDrawArrays ( GL_POINTS,0,shown->movingparticlecount );
+		if ( shown->particlecount > shown->movingparticlecount )
+		{
+			glColor3f ( 0.22f,0.22f,0.26f );
+			glDrawArrays ( GL_POINTS,shown->movingparticlecount,
+			               shown->particlecount - shown->movingparticlecount );
+		}
+		glColor3f ( 1.0f,1.0f,1.0f );
 	}
-	glDisable ( GL_LIGHTING );
-	glCallList ( BOX );
+	if ( showground )
+		glCallList ( GROUND );
 	glCallList ( TRICHTER );
+	if ( shownormals )
+		glCallList ( GROUND_NORMALS );
+	glDisable ( GL_LIGHTING );
+	if ( showbox )
+		glCallList ( BOX );
 	glBegin ( GL_LINES );
 	glColor4f ( 1,0,0,1 );
 	glVertex3f ( 0,0,0 );
@@ -934,7 +981,7 @@ void DisplayMain ( void )
 	//Last, because the water is transparent and has to be composited over
 	//whatever is behind it. Drawn any earlier it blends against the cleared
 	//background instead of against the scene, and comes out dark.
-	if ( screenspace_on && screenspace_available() && shown )
+	if ( screenspace && shown )
 	{
 		screenspace_render ( shown->particles, shown->movingparticlecount,
 		                     f.particleradius() *screenspace_radius, screenspace_smoothing,
