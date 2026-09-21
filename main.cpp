@@ -148,21 +148,35 @@ double rot[16]=
 #define MINZ -200
 #define MAXZ 200
 
-// How many particles the simulation can ever hold. It is a global, so it is
-// built before main() sees the command line; FLUIDSIM_MAX_PARTICLES raises it
-// for runs that want more liquid than the default cap.
-static unsigned long max_particles_from_env()
+// The one array a scene lives in holds the water and the control particles that
+// shape it both, and -n only asks for the water. Until 2026 the array was a
+// constant 150000 that -n could be set equal to; the scene was then built off
+// the end of it, which is a heap overrun and a segfault - -n 150000 laid down
+// 150186 particles of water and then the funnel's control particles past them.
+//
+// Neither half of the count can be worked out in advance: the water is placed
+// by subdividing tetrahedra until each piece holds one particle, so it lands
+// near -n rather than on it, and how many control particles a scene needs
+// depends on its geometry. So build the scene into a Fluid that only counts,
+// and allocate the real one at what that says, plus a little for the solver's
+// own use. It costs one extra layout pass, which is milliseconds.
+//
+// FLUIDSIM_MAX_PARTICLES overrides the size outright, for a run that wants room
+// to spare. It is 120 bytes a particle.
+static unsigned long room_for ( const Scene * sc, unsigned long wanted )
 {
 	const char * s = getenv ( "FLUIDSIM_MAX_PARTICLES" );
 	unsigned long v = s ? strtoul ( s, 0, 10 ) : 0;
-	return v ? v : 150000;
+	if ( v )
+		return v;
+	Fluid counter ( 2, 0.5f, 0.0f, 0.0f, -9.81f, MINX, MINY, MINZ, MAXX, MAXY, MAXZ );
+	counter.set_count_only ( true );
+	sc->build ( counter, wanted );
+	return counter.particlecount() + 64;
 }
 
-Fluid f = Fluid ( max_particles_from_env(),
-                  0.5f,
-                  0.0f, 0.0f, -9.81f,
-                  MINX, MINY, MINZ,
-                  MAXX, MAXY, MAXZ );
+//Built in main() once the command line has been read, so that -n can size it.
+static Fluid * fluid = 0;
 
 using namespace std;
 unsigned char ** rawdata;
@@ -197,11 +211,12 @@ static void usage ( const char * argv0 )
 	"                      at the default timestep, -H 250 is real time.\n"
 	"  -h, --help          this\n"
 	"\n"
-	"To go past the built-in cap of particles the simulation can hold, set\n"
-	"FLUIDSIM_MAX_PARTICLES; it costs memory whether you fill it or not.\n"
+	"The simulation is sized from -n, with room over for the scene's own control\n"
+	"particles. FLUIDSIM_MAX_PARTICLES overrides that size outright, for a run\n"
+	"that wants room to spare; it costs memory whether you fill it or not.\n"
 	"Keys are listed in README.md. Examples:\n"
 	"\n"
-	"    FLUIDSIM_MAX_PARTICLES=250000 " << argv0 << " -n 100000 -r\n"
+	"    " << argv0 << " -X funnel -n 150000 -r\n"
 	"    " << argv0 << " -X terrain -n 40000 -r -s\n"
 	"\n"
 	"scenes:\n";
@@ -263,12 +278,6 @@ int main ( int argc,char** argv )
 	}
 	if ( wanted_particles < 1 )
 		wanted_particles = scene->natural_particles;
-	if ( wanted_particles > f.maxparticlecount() )
-	{
-		cout << "Asked for " << wanted_particles << " particles but the simulation holds "
-		     << f.maxparticlecount() << ". Set FLUIDSIM_MAX_PARTICLES higher." << endl;
-		wanted_particles = f.maxparticlecount();
-	}
 
 	rawdata=new unsigned char*;
 	*rawdata=new unsigned char[10000];
@@ -292,10 +301,17 @@ int main ( int argc,char** argv )
 	//scenes.cpp. Until 2026 there was one of these hard-coded here with the
 	//others commented out in place, so picking one meant an edit and a rebuild.
 	terrain_set ( wanted_slope, wanted_waves );
-	f.set_height_function ( scene->height );
-	f.set_height_function_normal ( scene->height_normal );
-	f.set_ground_restitution ( scene->ground_restitution );
-	scene->build ( f, wanted_particles );
+	//...and only now is the scene's geometry settled enough to be measured, so
+	//this is where the array it lives in can be sized. See room_for().
+	fluid = new Fluid ( room_for ( scene, wanted_particles ),
+	                    0.5f,
+	                    0.0f, 0.0f, -9.81f,
+	                    MINX, MINY, MINZ,
+	                    MAXX, MAXY, MAXZ );
+	fluid->set_height_function ( scene->height );
+	fluid->set_height_function_normal ( scene->height_normal );
+	fluid->set_ground_restitution ( scene->ground_restitution );
+	scene->build ( *fluid, wanted_particles );
 	distanz = scene->camera_distance;
 	showground = scene->ground_shown;
 	{
@@ -311,17 +327,21 @@ int main ( int argc,char** argv )
 		for ( int m=0;m<16;++m ) rot[m] = r[m];
 	}
 	cout << "scene " << scene->name << ": " << scene->summary << endl;
-	cout << f.movingparticlecount() << " liquid particles, "
-	     << f.boundaryparticlecount() << " control particles." << endl;
+	cout << fluid->movingparticlecount() << " liquid particles, "
+	     << fluid->boundaryparticlecount() << " control particles." << endl;
+	if ( fluid->refusedcount() )
+		cout << "The scene did not fit: " << fluid->refusedcount() << " particles of it were "
+		     "dropped, out of " << fluid->particlecount() +fluid->refusedcount() << ". Set "
+		     "FLUIDSIM_MAX_PARTICLES above " << fluid->maxparticlecount() << "." << endl;
 
 	//The solver gets a thread of its own, and everything the command line said
 	//about how it should run. From here on it is the only thread that advances
-	//f; the viewer reads what it publishes, and otherwise only the handful of
-	//things about f that never change once the scene is built.
+	//the fluid; the viewer reads what it publishes, and otherwise only the
+	//handful of things about it that never change once the scene is built.
 	sim_set_dt ( speed );
 	sim_set_paused ( paused );
 	sim_set_rate_limit ( wanted_sim_rate );
-	sim_start ( f, wanted_threads );
+	sim_start ( *fluid, wanted_threads );
 
 	glutInit ( &argc, argv );
 	initMain();
@@ -531,7 +551,7 @@ void initCallLists ( void )
 		for ( int a=0;a<=scene->ground_nx;++a )
 			for ( int b=0;b<=scene->ground_ny;++b )
 			{
-				float z = f.height_function ( scene->ground_x0+a*dx, scene->ground_y0+b*dy );
+				float z = fluid->height_function ( scene->ground_x0+a*dx, scene->ground_y0+b*dy );
 				if ( z<zlo ) zlo=z;
 				if ( z>zhi ) zhi=z;
 			}
@@ -546,8 +566,8 @@ void initCallLists ( void )
 				{
 					float x = scene->ground_x0 + ( a+e ) *dx;
 					float y = scene->ground_y0 + b*dy;
-					float z = f.height_function ( x,y );
-					Vektor n = f.height_function_normal ( x,y ).normed();
+					float z = fluid->height_function ( x,y );
+					Vektor n = fluid->height_function_normal ( x,y ).normed();
 					float lit = 0.45f + 0.55f* ( n.x() *lx + n.y() *ly + n.z() *lz );
 					if ( lit < 0 ) lit = 0;
 					float t = ( z-zlo ) / ( zhi-zlo );
@@ -571,9 +591,9 @@ void initCallLists ( void )
 			for ( int b=0;b<=scene->ground_ny;b+=4 )
 			{
 				float x = scene->ground_x0 + a*dx, y = scene->ground_y0 + b*dy;
-				Vektor n = f.height_function_normal ( x,y ).norm ( 0.03f* ( scene->ground_x1-scene->ground_x0 ) );
-				glVertex3f ( x,y,f.height_function ( x,y ) );
-				glVertex3f ( x+n.x(),y+n.y(),f.height_function ( x,y ) +n.z() );
+				Vektor n = fluid->height_function_normal ( x,y ).norm ( 0.03f* ( scene->ground_x1-scene->ground_x0 ) );
+				glVertex3f ( x,y,fluid->height_function ( x,y ) );
+				glVertex3f ( x+n.x(),y+n.y(),fluid->height_function ( x,y ) +n.z() );
 			}
 		glEnd();
 	}
@@ -586,7 +606,7 @@ void initCallLists ( void )
 	//against it - it is a ruler, not a wall.
 	glNewList ( BOX, GL_COMPILE );
 	{
-		Vektor lo = f.minxyz(), hi = f.maxxyz();
+		Vektor lo = fluid->minxyz(), hi = fluid->maxxyz();
 		const float xs[2] = { lo.x(),hi.x() }, ys[2] = { lo.y(),hi.y() }, zs[2] = { lo.z(),hi.z() };
 		glDisable ( GL_LIGHTING );
 		glColor4f ( 0.35f,0.35f,0.40f,1 );
@@ -714,7 +734,7 @@ void kbf ( unsigned char key,int x, int y )
 			sim_set_paused ( paused );
 			break;
 			/*    case 'n' :
-			        f.deb_colliderecording() ? f.deb_hidecollide() : f.deb_showcollide();
+			        fluid->deb_colliderecording() ? fluid->deb_hidecollide() : fluid->deb_showcollide();
 					ReshapeMain(glutGet(GLUT_WINDOW_WIDTH),glutGet(GLUT_WINDOW_HEIGHT));
 			        break;*/
 		case 'q' :
@@ -761,7 +781,7 @@ void kbf2 ( int key,int x, int y )
 	switch ( key )
 	{
 			/*    case GLUT_KEY_F1    :
-			        f.deb_print_relevant_grid();
+			        fluid->deb_print_relevant_grid();
 			        break;*/
 		case GLUT_KEY_F2    :
 			initMain();
@@ -779,23 +799,23 @@ void kbf2 ( int key,int x, int y )
 			break;
 //	#ifdef debug
 //    case GLUT_KEY_LEFT  :
-//        f.deb_showcollideprev();
-////        cout << "Showing collisions with particle " << f.deb_get_bumpingparticle() << endl;
+//        fluid->deb_showcollideprev();
+////        cout << "Showing collisions with particle " << fluid->deb_get_bumpingparticle() << endl;
 //        break;
 //    case GLUT_KEY_RIGHT :
-//        f.deb_showcollidenext();
-////        cout << "Showing collisions with particle " << f.deb_get_bumpingparticle() << endl;
+//        fluid->deb_showcollidenext();
+////        cout << "Showing collisions with particle " << fluid->deb_get_bumpingparticle() << endl;
 //        break;
 //	#else
 //    case GLUT_KEY_LEFT  :
 //        g_normal_length/=1.05f;
 //        cout << "g_normal_length is set to " << g_normal_length << endl;
-////        cout << "Showing collisions with particle " << f.deb_get_bumpingparticle() << endl;
+////        cout << "Showing collisions with particle " << fluid->deb_get_bumpingparticle() << endl;
 //        break;
 //    case GLUT_KEY_RIGHT :
 //        g_normal_length*=1.05;
 //        cout << "g_normal_length is set to " << g_normal_length << endl;
-////        cout << "Showing collisions with particle " << f.deb_get_bumpingparticle() << endl;
+////        cout << "Showing collisions with particle " << fluid->deb_get_bumpingparticle() << endl;
 //        break;
 			//#endif
 			/*    case GLUT_KEY_UP    :
@@ -974,13 +994,13 @@ void DisplayMain ( void )
 	glBegin ( GL_LINES );
 	glColor4f ( 1,0,0,1 );
 	glVertex3f ( 0,0,0 );
-	glVertex3f ( 4*f.particleradius(),0,0 );
+	glVertex3f ( 4*fluid->particleradius(),0,0 );
 	glColor4f ( 0,1,0,1 );
 	glVertex3f ( 0,0,0 );
-	glVertex3f ( 0,4*f.particleradius(),0 );
+	glVertex3f ( 0,4*fluid->particleradius(),0 );
 	glColor4f ( 0,0,1,1 );
 	glVertex3f ( 0,0,0 );
-	glVertex3f ( 0,0,4*f.particleradius() );
+	glVertex3f ( 0,0,4*fluid->particleradius() );
 	glEnd();
 
 	//Last, because the water is transparent and has to be composited over
@@ -989,7 +1009,7 @@ void DisplayMain ( void )
 	if ( screenspace && shown )
 	{
 		screenspace_render ( shown->particles, shown->movingparticlecount,
-		                     f.particleradius() *screenspace_radius, screenspace_smoothing,
+		                     fluid->particleradius() *screenspace_radius, screenspace_smoothing,
 		                     ( float ) distanz, showlight );
 	}
 
@@ -1027,7 +1047,7 @@ void zeitgeber ( int value )
 
 		cout << sekunden << ". Sekunde: " << framecount << "frames, "
 		     << sim_steps_since_last_call() << " steps, "
-		     << f.particlecount() << " particles, " << f.movingparticlecount()
+		     << fluid->particlecount() << " particles, " << fluid->movingparticlecount()
 		     << " moving particles, " << trianglecount << "triangles." << endl;
 		trianglecount=0;
 		sekunden ++;
@@ -1038,14 +1058,14 @@ void zeitgeber ( int value )
 
 void ReshapeMain ( GLint width, GLint height )
 {
-	/*	if(f.deb_colliderecording()) {
+	/*	if(fluid->deb_colliderecording()) {
 			GLsizei tmp1 = glutGet(GLUT_WINDOW_WIDTH);
 			GLsizei tmp2 = glutGet(GLUT_WINDOW_HEIGHT);
 			glutSetWindow(winIdMain);
 			glViewport(0, 0, tmp1, tmp2);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-		    gluPerspective(90.0, (float)tmp1 / tmp2, distanz - f.particleradius(),distanz + f.particleradius());
+		    gluPerspective(90.0, (float)tmp1 / tmp2, distanz - fluid->particleradius(),distanz + fluid->particleradius());
 			glMatrixMode(GL_MODELVIEW);
 		} else {*/
 	glViewport ( 0, 0, width, height );

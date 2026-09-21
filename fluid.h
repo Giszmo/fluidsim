@@ -30,6 +30,7 @@ void fluid_probe_control ( unsigned long id, int kind, Vektor x, Vektor v, Vekto
 #define __int64 long long
 #endif
 
+
 #define BOUNDING_PARTICLES_PER_CELL 2.5f
 
 //8 corners (m | p)(x | y | z)^3
@@ -41,6 +42,8 @@ void fluid_probe_control ( unsigned long id, int kind, Vektor x, Vektor v, Vekto
 #define m101 5
 #define m111 6
 #define m011 7
+
+#define BOUNDING_PARTICLES_PER_CELL 2.5f
 
 //8 corners (m | p)(x | y | z)^3
 #define m000bit 1
@@ -274,6 +277,14 @@ class Fluid
 		bool _listssorted;
 		unsigned long _particlecount;
 		unsigned long _particlecount_physik;
+		//Particles the scene asked for after the array was full. Nothing in here
+		//used to check: newparticle() and newcontrollparticle() wrote at
+		//_particlecount whatever it was, so a scene one particle too big for its
+		//array walked off the end of it and corrupted the heap. See full().
+		unsigned long _particles_refused;
+		//See set_count_only(): a Fluid that lays out a scene without storing it,
+		//so that the real one can be allocated at exactly the size the scene needs.
+		bool _count_only;
 		unsigned long _particlecount_boundary;
 		unsigned __int64 _BoxIdBitmask;
 		unsigned __int64 _ParticleIdBitmask;
@@ -352,6 +363,8 @@ class Fluid
 			_ground_bounce = -1.8f;
 
 			_particlecount=_particlecount_physik=_particlecount_boundary=0;
+			_particles_refused=0;
+			_count_only=false;
 			if ( _cellsxplus2yzparticlebits > 64 )
 			{
 				cout << "2 + CellsXBits(" << ( int ) _cellsxplus2bits-2 <<
@@ -576,6 +589,21 @@ class Fluid
 		unsigned long movingparticlecount ( void )
 		{
 			return _particlecount_physik;
+		}
+		//How much of the scene did not fit: see full(). Zero whenever it did.
+		unsigned long refusedcount ( void )
+		{
+			return _particles_refused;
+		}
+		//Lay a scene out and count it without storing any of it. How big a scene
+		//is is not something it can be asked: the water is placed by subdividing
+		//tetrahedra until each piece holds one particle, so it lands near the
+		//count it was given rather than on it, and the control particles that
+		//shape the scene share the same array and can outnumber the water in a
+		//small run. Building it into a counting Fluid first answers it exactly.
+		void set_count_only ( bool on )
+		{
+			_count_only = on;
 		}
 		float particleradius ( void )
 		{
@@ -2322,8 +2350,30 @@ class Fluid
 				newparticle ( coord.x(),coord.y(),coord.z(),0.0001f,0.0001f,0.0001f,1,1,moving );
 			}
 		}
+		//The one array everything in a scene lives in is _particle[_maxparticlecount],
+		//and the water and the control particles that shape it share it. A scene
+		//that asks for more than fits used to get it: both constructors below
+		//wrote at _particlecount without looking, so `-n 150000` into an array of
+		//150000 laid down 150186 particles of water and then built the funnel's
+		//2016 control particles past the end of it. Refuse instead, and count the
+		//refusals so that main() can say how much of the scene is missing.
+		bool full()
+		{
+			if ( _particlecount < _maxparticlecount )
+				return false;
+			++_particles_refused;
+			return true;
+		}
 		void newparticle ( const float x, const float y, const float z, const float vx, const float vy, const float vz, const float m, const float t, const PARTICLE_TYPE kind )
 		{
+			if ( _count_only )
+			{
+				++_particlecount;
+				++_particlecount_physik;
+				return;
+			}
+			if ( full() )
+				return;
 			//Moving particles live in [0,_particlecount_physik) and control particles
 			//after them, so making room for one means moving the control particle
 			//that sits in the way to the end of the list. That is a move, not a new
@@ -2363,6 +2413,14 @@ class Fluid
 		}
 		void newcontrollparticle ( const float x, const float y, const float z, const float bx, const float by, const float bz, const float dx, const float dy, const float dz, PARTICLE_TYPE kind )
 		{
+			if ( _count_only )
+			{
+				++_particlecount;
+				++_particlecount_boundary;
+				return;
+			}
+			if ( full() )
+				return;
 			_particle[_particlecount].set ( x,y,z,bx,by,bz,dx,dy,dz,kind );
 
 			_sortlist[                    _particlecount]=_particlecount;

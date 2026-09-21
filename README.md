@@ -82,7 +82,7 @@ makefile. There is no Boost dependency any more.
 | `-H N` | hold the solver to N steps per second (default: as many as it can take). At the default dt of 0.004, `-H 250` is wall-clock real time |
 | `--slope S` | `terrain` only: how steeply the channel is tilted (default 0.12) |
 | `--waves W` | `terrain` only: how deep the ripples along it are (default 1.8) |
-| `FLUIDSIM_MAX_PARTICLES` | capacity, default 150 000. It has to be an environment variable because the `Fluid` is a global and is built before `main()` sees the command line |
+| `FLUIDSIM_MAX_PARTICLES` | override the capacity outright. By default it is measured from the scene, see [How big the array has to be](#how-big-the-array-has-to-be) |
 
 The simulation starts **paused**; press `p` to run it. Moving the mouse over the window
 rotates the camera. It prints a line per second to stdout with **both** rates in it —
@@ -137,6 +137,32 @@ frictionless ground that has nothing to stop them. The 2005 clamp would have
 held that 148 at 20, which is slower, not different. `terrain` closes its loop
 with a `shift` instead, which adds a constant to the position and compresses
 nothing, and that one runs indefinitely.
+
+### How big the array has to be
+
+Every particle in a scene — the water and the control particles that shape it —
+lives in one array, `Fluid::_particle[maxparticlecount]`, and nothing used to
+check the bound before writing to it. `-n` only asks for the water. Until 2026
+the array was a constant 150 000 that `-n` could be set equal to, and then:
+
+| `-n` | water | control | total | array |
+|---|---|---|---|---|
+| 140 000 | 140 179 | 2016 | 142 195 | 150 000 |
+| 150 000 | 150 186 | 2016 | **152 202** | 150 000 |
+
+which is a heap overrun and a segfault, in every scene — `fountain` overran by
+84 at `-n 150000`, `terrain` by 866, `funnel` by 2202. Asking for more than the
+array held clamped the request down to exactly the array size and then crashed
+in the same way, one line after saying so.
+
+Neither half of the count can be worked out in advance. The water is placed by
+subdividing tetrahedra until each piece holds one particle, so it lands near
+`-n` rather than on it. How many control particles a scene needs is a property
+of its geometry. So `main()` builds the scene twice: once into a `Fluid` that
+only counts (`set_count_only()`), and then for real into one allocated at
+exactly what that said. The counting pass is milliseconds. `newparticle()` and
+`newcontrollparticle()` also refuse to write past the end now, and count what
+they refused, so a scene that does not fit is a message rather than a crash.
 
 **Three different things stop a particle, and they do not agree with each
 other.** In `funnel` a particle that arrives at the floor meets one of two of
