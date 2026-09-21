@@ -5,3 +5,4 @@ main.Linux.*_opt
 test/headless
 hight100x100.sink.bmp
 test/surface
+test/probe
