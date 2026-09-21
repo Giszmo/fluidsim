@@ -649,7 +649,17 @@ static void screenspace_init()
 	g_sp_blur  = link_program ( SP_FULLSCREEN_VS, SP_BLUR_FS, "screen-space blur" );
 	g_sp_comp  = link_program ( SP_FULLSCREEN_VS, SP_COMPOSITE_FS, "screen-space composite" );
 	if ( g_sp_depth && g_sp_thick && g_sp_blur && g_sp_comp )
+	{
 		g_sp_ok = true;
+		//How big a point this driver will rasterise is a hard limit, it differs
+		//between machines - 63 and 255 are both real - and a splat that wants
+		//more than it comes out at the limit instead. Worth having in writing
+		//when a picture of the water looks wrong somewhere else.
+		GLfloat range[2] = { 1.0f, 0.0f };
+		glGetFloatv ( GL_POINT_SIZE_RANGE, range );
+		cout << "screen-space fluid on " << ( const char * ) glGetString ( GL_RENDERER )
+		     << ", points up to " << range[1] << " px." << endl;
+	}
 	else
 	{
 		g_sp_error = g_error;
