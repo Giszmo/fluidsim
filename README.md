@@ -117,7 +117,7 @@ those are two different numbers; see below.
 | | |
 |---|---|
 | `fountain` | the scene this program has always started in. A parabolic bowl `0.05*(x^2+y^2)`, a 4x4 plate at z=0 that sets the speed of anything crossing it to +70, and a tetrahedron of liquid dropped on it. 1875 particles |
-| `funnel` | **the 2005 scene.** Liquid falls through a funnel onto a flat floor, a plate pushes it east, a wall at x=15 teleports it to z=100, and a plate up there starts it falling into the funnel again. A closed loop. 833 particles — and it does not like many more, because its loop is a `teleport`, which drops everything it catches at one point, and a few thousand particles arriving at one point is an explosion rather than a waterfall |
+| `funnel` | **the 2005 scene.** Liquid falls through a funnel onto the floor, a conveyor plate pushes it east, a wall at x=15 lifts it back to z=98, and a plate up there starts it falling into the funnel again. A closed loop, and since 2026 one that actually closes: see below. 833 particles by default, and it takes as many as you give it |
 | `terrain` | a channel tilted along x and rippled along and across it, with the low end wired back to the high end. 25 000 particles |
 
 Until 2026 there was exactly one scene, built inline in `main()`, with the
@@ -128,16 +128,31 @@ it, and the flat ground it was written for, or the teleport wall at z=0..2
 sits buried under the bowl and nothing ever reaches it. `scenes.cpp` is the
 whole of it now, one table entry per scene.
 
-**`funnel` does not hold its water, and that is the 2005 scene being the 2005
-scene.** Its loop is a `teleport`, and a teleport puts everything it catches at
-one target point plus a tenth of where it came in — so the wall, 30 wide and 2
-tall, is mapped onto 3 by 0.2, a thousandfold compression, and the stream
-arriving there blows apart. Measured: 833 particles, top speed 148, and 802 of
-them past r=60 within 48 seconds of simulated time, sliding out across a flat
-frictionless ground that has nothing to stop them. The 2005 clamp would have
-held that 148 at 20, which is slower, not different. `terrain` closes its loop
-with a `shift` instead, which adds a constant to the position and compresses
-nothing, and that one runs indefinitely.
+**`funnel` used not to hold its water, and the reason was its own loop.** A
+`teleport` puts everything it catches at one target point plus a tenth of where
+it came in — and every control particle of the patch shares that one target, so
+the size of the patch makes no difference to where the water comes out. The
+wall, 30 wide and 2 tall, was mapped onto about 3 by 0.2: a thousandfold
+compression, and the stream arriving there blew apart and threw particles clear
+over the funnel's mouth, onto a flat frictionless ground that had nothing to
+stop them. Measured over 24 simulated seconds, 833 particles: **566 of them, 68%
+of the scene, ended past r=21, which is past anything that could return water**,
+the furthest at r=4144.
+
+It is a `shift` now, `(-15, 0, +98)`, which translates the whole patch rigidly
+and so delivers the stream in the shape it arrived in — the same thing
+`terrain` closes its loop with. Two changes come with it, because a rigid lift
+keeps the velocity as well as the shape: the plate at the top has to be wide
+enough for a stream 30 long rather than the 10x10 of 2005, and it is what takes
+off the conveyor's 10 east, which over the 43 units of fall to the funnel's
+mouth would otherwise carry the water 30 sideways and clean past it.
+
+And the ground under the funnel is a basin rather than an infinite flat plane:
+flat out to 22 in x and in y, then a quadratic rim, the same shape as
+`terrain`'s banks. Splashes leave the conveyor whatever the return path does,
+and on a flat frictionless ground anything that leaves is gone. Over 100
+simulated seconds now: **nothing past r=21 at any point, the furthest excursion
+of the whole run r=31.6**, and the rim brought that back.
 
 **Every patch in the program had holes in it.** A control particle only acts
 on what is within one particle radius of it in every axis — the neighbour scan
@@ -200,22 +215,25 @@ bounces and sometimes lands dead:
 | `boundary` control particles | 0.01, hard-coded in `collide()` | within a cell of a patch of the triangle list |
 | `setspeed` control particles | none: the whole velocity is overwritten | within a cell of the patch |
 
-`funnel`'s floor is a `setspeed` patch at z=1 spanning [-6,6]^2 that sets the
-velocity to (10,0,0) — that is how the scene pushes water east towards its
-teleport wall, and it necessarily throws the vertical speed away. The flat
-ground at z=0 is underneath it and everywhere around it, and gives 80% of the
-normal speed back. Counting arrivals over 4000 steps — a particle below z=5
-still falling faster than 3: **the patch catches 4090 of them and throws away
-a mean arrival speed of 9.9, while the ground bounces 951, from a mean of
-30.** 96% of those bounces happen at x>6, past the end of the patch.
-Following single particles: one comes down at x=1.9 over the patch, settles
-onto it without a single bounce and slides east; another comes down at
-x=-7.2, a unit and a bit outside it, and is thrown back up to z=4.9.
+`funnel`'s floor is a `setspeed` patch at z=1 that sets the velocity to
+(10,0,0) — that is how the scene pushes water east towards the wall, and it
+necessarily throws the vertical speed away. The ground is underneath it and
+everywhere around it, and gives 80% of the normal speed back. In 2005 the patch
+spanned [-6,6]^2 while the wall it feeds is at x=15, so where a particle landed
+decided which of the two it met. Counting arrivals over 4000 steps — a particle
+below z=5 still falling faster than 3: **the patch caught 4090 of them and threw
+away a mean arrival speed of 9.9, while the ground bounced 951, from a mean of
+30**, and 96% of those bounces happened at x>6, past the end of the patch.
+Following single particles: one came down at x=1.9 over the patch, settled onto
+it without a single bounce and slid east; another came down at x=-7.2, a unit
+and a bit outside it, and was thrown back up to z=4.9.
 
-That is the scene, not the solver: the conveyor is what makes the loop work,
-and it only reaches to x=6 while the wall it feeds is at x=15. Widening the
-patch to the wall, or giving `funnel` a lower `ground_restitution` the way
-`terrain` has, would each make the floor behave the same way everywhere.
+That was the scene, not the solver: the conveyor is what makes the loop work,
+and it stopped well short of the wall it feeds. It spans [-15,15]^2 now, so it
+reaches the wall and the floor behaves the same way everywhere on it. Lowering
+`funnel`'s `ground_restitution` to `terrain`'s 0.25 would be the other way to
+the same place, and is one number in the scene table if you would rather have
+that.
 
 **A wall used to hold onto water that was already leaving it.** The `boundary`
 branch of `collide()` reflected on position alone: if the particle was behind

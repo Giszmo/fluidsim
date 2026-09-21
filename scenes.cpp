@@ -41,6 +41,15 @@ static void rect ( float * t, int & c,
 	}
 }
 
+//How far past a limit a value is, signed, and 0 between them. Both scenes with
+//a rim build it out of this.
+static float over ( float v, float lo, float hi )
+{
+	if ( v > hi ) return v-hi;
+	if ( v < lo ) return v-lo;
+	return 0;
+}
+
 // -------------------------------------------------------- scene: fountain --
 // The scene this program has always started in: a parabolic bowl, a small
 // plate at the bottom that throws anything crossing it straight up, and a
@@ -63,12 +72,46 @@ static void fountain_build ( Fluid & f, unsigned long wanted )
 
 // ---------------------------------------------------------- scene: funnel --
 // The scene that was in main() in 2005 and has been sitting there commented
-// out ever since. A closed loop: liquid falls through a funnel, is dropped
-// out of its throat onto a flat floor, pushed east along it, teleported from
-// a wall back up to z=100, and started downwards again by a plate up there.
+// out ever since. A closed loop: liquid falls through a funnel, is dropped out
+// of its throat onto the floor, pushed east along it, lifted from a wall back
+// up to z=100, and started downwards again by a plate up there.
+//
+// Two things about the loop are not the 2005 ones, because the 2005 ones do
+// not close it:
+//
+// The return is a shift, not a teleport. A teleport sends every particle to
+// one target point, and every control particle of the patch shares that
+// target - so the whole arriving stream is squeezed into a fraction of a cell,
+// whatever the patch's size. The wall here is 30 by 2 and the 2005 teleport
+// mapped it onto about 3 by 0.2: the water came out as a blast that threw
+// particles clear over the funnel's mouth, and they then slid away over a flat
+// frictionless ground for good. Measured over 24 simulated seconds: 68% of the
+// scene ended up outside any part of it that can return water. A shift moves
+// the whole patch rigidly, so the stream arrives in the shape it left in.
+//
+// The ground is a basin rather than an infinite flat plane. Splashes leave the
+// conveyor whatever the return path does, and on a flat frictionless ground
+// anything that leaves is gone. The rim is part of the height function, so it
+// is tested against every particle every step.
 
-static float  funnel_h ( float, float ) { return 0.0f; }
-static Vektor funnel_n ( float, float ) { return Vektor ( 0,0,1 ); }
+//Flat under the funnel, the conveyor and the wall; beyond that the ground turns
+//up into a quadratic rim that rolls water back in. Same shape as the terrain
+//scene's banks, per axis rather than radial, and flat where it meets them so
+//there is no lip to bounce off. At 0.6 a particle leaving the conveyor at 30 -
+//three times the conveyor's own speed - has climbed to a stop by r=31.
+#define FUNNEL_FLAT 22.0f
+#define FUNNEL_RIM  0.6f
+
+static float funnel_h ( float x, float y )
+{
+	float ox = over ( x,-FUNNEL_FLAT,FUNNEL_FLAT ), oy = over ( y,-FUNNEL_FLAT,FUNNEL_FLAT );
+	return FUNNEL_RIM* ( ox*ox + oy*oy );
+}
+static Vektor funnel_n ( float x, float y )
+{
+	float ox = over ( x,-FUNNEL_FLAT,FUNNEL_FLAT ), oy = over ( y,-FUNNEL_FLAT,FUNNEL_FLAT );
+	return Vektor ( -2*FUNNEL_RIM*ox,-2*FUNNEL_RIM*oy,1 );
+}
 
 //The rings of the funnel, radius j*j at z=15+8j, j from 1 to 5. The viewer
 //draws the same numbers into its TRICHTER display list.
@@ -79,6 +122,13 @@ void funnel_ring ( int j, int i, float * out )
 	out[1] = sinf ( a ) * ( float ) ( j*j );
 	out[2] = 15.0f + 8.0f* ( float ) j;
 }
+
+//The wall the water is lifted from, and where it is put down: x=15 back to
+//x=0, z=0..2 up to z=98..100, which is the plate the 2005 scene dropped it
+//from. y is untouched, so a stream arrives where it left.
+#define FUNNEL_WALL_X   15.0f
+#define FUNNEL_WALL_Y   15.0f
+#define FUNNEL_TOP_Z    98.0f
 
 static void funnel_build ( Fluid & f, unsigned long wanted )
 {
@@ -105,19 +155,30 @@ static void funnel_build ( Fluid & f, unsigned long wanted )
 	rect ( t,c, Vektor ( -3,-3,23 ),Vektor ( 3,-3,23 ),Vektor ( 3,3,23 ),Vektor ( -3,3,23 ) );
 	f.trianglelist2shift ( 0,0,-10,t,0,1 );
 
-	//the floor: push everything that lands on it east
+	//the floor: push everything that lands on it east, all the way to the wall.
+	//In 2005 this stopped at x=6 while the wall it feeds is at x=15, so water
+	//that came down past the end of it was never pushed anywhere - it bounced
+	//on the ground at 0.8 and stayed where it fell. 96% of all ground bounces
+	//in the scene were beyond x=6.
 	c = 0;
-	rect ( t,c, Vektor ( -6,-6,1 ),Vektor ( 6,-6,1 ),Vektor ( 6,6,1 ),Vektor ( -6,6,1 ) );
+	rect ( t,c, Vektor ( -FUNNEL_WALL_Y,-FUNNEL_WALL_Y,1 ),Vektor ( FUNNEL_WALL_X,-FUNNEL_WALL_Y,1 ),
+	       Vektor ( FUNNEL_WALL_X,FUNNEL_WALL_Y,1 ),Vektor ( -FUNNEL_WALL_Y,FUNNEL_WALL_Y,1 ) );
 	f.trianglelist2setspeed ( 10,0,0,t,0,1 );
 
-	//the wall it arrives at: back up to the top
+	//the wall it arrives at: back up to the top, rigidly
 	c = 0;
-	rect ( t,c, Vektor ( 15,15,2 ),Vektor ( 15,15,0 ),Vektor ( 15,-15,0 ),Vektor ( 15,-15,2 ) );
-	f.trianglelist2teleport ( 0,0,100,t,0,1 );
+	rect ( t,c, Vektor ( FUNNEL_WALL_X,FUNNEL_WALL_Y,2 ),Vektor ( FUNNEL_WALL_X,FUNNEL_WALL_Y,0 ),
+	       Vektor ( FUNNEL_WALL_X,-FUNNEL_WALL_Y,0 ),Vektor ( FUNNEL_WALL_X,-FUNNEL_WALL_Y,2 ) );
+	f.trianglelist2shift ( -FUNNEL_WALL_X,0,FUNNEL_TOP_Z,t,0,1 );
 
-	//and start it falling again, into the funnel
+	//and start it falling again, into the funnel. The water arrives up here
+	//still carrying the conveyor's 10 east, which over the 43 units it has to
+	//fall to the funnel's mouth would carry it 30 sideways and clean past it;
+	//this is what takes that off. It has to be wider than the 10x10 of 2005 for
+	//the same reason: the arrival is a stream 30 long, not a point.
 	c = 0;
-	rect ( t,c, Vektor ( -5,-5,100 ),Vektor ( 5,-5,100 ),Vektor ( 5,5,100 ),Vektor ( -5,5,100 ) );
+	rect ( t,c, Vektor ( -8,-FUNNEL_WALL_Y-2,FUNNEL_TOP_Z-1 ),Vektor ( 8,-FUNNEL_WALL_Y-2,FUNNEL_TOP_Z-1 ),
+	       Vektor ( 8,FUNNEL_WALL_Y+2,FUNNEL_TOP_Z-1 ),Vektor ( -8,FUNNEL_WALL_Y+2,FUNNEL_TOP_Z-1 ) );
 	f.trianglelist2setspeed ( 0,0,-1,t,0,1 );
 
 	const float v0[3] = { -5,-5,55 };
@@ -186,14 +247,6 @@ void terrain_set ( float slope, float waviness )
 
 static const float TERRAIN_KX = 2.0f*( float ) M_PI*RIPPLES/TERRAIN_LEN;
 static const float TERRAIN_KY = 2.0f*( float ) M_PI*GULLIES/TERRAIN_WID;
-
-//How far past the rim a point is, signed so that it is 0 inside the channel.
-static float over ( float v, float lo, float hi )
-{
-	if ( v > hi ) return v-hi;
-	if ( v < lo ) return v-lo;
-	return 0;
-}
 
 static float terrain_h ( float x, float y )
 {
@@ -313,9 +366,9 @@ static const Scene scenes[] =
 	},
 	{
 		"funnel",
-		"the 2005 scene: through a funnel, along the floor, teleported back to the top",
+		"the 2005 scene: through a funnel, along the floor, lifted back to the top",
 		funnel_h, funnel_n, funnel_build, 833,
-		true, -26,26,26, -26,26,26,
+		true, -30,30,30, -30,30,30,
 		true, 110.0f, 30.0f, 0.8f
 	},
 	{
