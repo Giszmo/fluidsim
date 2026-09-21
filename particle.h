@@ -138,9 +138,26 @@ class Particle
 		//.norm(_v.absabs()*(-.01f)), is quadratic drag, which is what it was
 		//meant to be. 2005 hid it behind a hard speed clamp (norm to 20 above
 		//400); the 2008 rework dropped the clamp and kept the term.
-		void move ( const float t )
+		//
+		//maxstep is how far a particle may travel in one step and still be
+		//simulated at all: past its own interaction radius it crosses a
+		//neighbour's kernel between two scans, so the pair is never seen and
+		//nothing pushes back. The funnel's throat is where that is reached -
+		//water piles up in it, the density goes far past rest, and the force
+		//that pushes it apart is bigger than one step can carry. Measured at
+		//8000 particles: twelve particles left (0,0,23.4) in two consecutive
+		//steps at 300 to 600, which is up to 1.9 units in a step against a
+		//radius of 0.5, and from there they were gone for good - highest 8274
+		//over 24 simulated seconds. Holding the step to one radius keeps them
+		//inside the model; it fires only where the model had already stopped
+		//applying. 2005 had the same guard as a flat "norm to 20 above 400" in
+		//here, and the 2008 rework dropped it.
+		void move ( const float t, const float maxstep )
 		{
 			_v += _a * t;
+			const float lim = maxstep / t;
+			if ( _v.absabs() > lim*lim )
+				_v = _v.norm ( lim );
 			_x += _v * t;
 		};
 };

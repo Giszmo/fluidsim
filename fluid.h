@@ -487,7 +487,7 @@ class Fluid
 				#pragma omp parallel for schedule ( static, 64 )
 				for ( long i=0; i<n; i++ )
 				{
-					_particle[i].move ( dt );
+					_particle[i].move ( dt, _particlesize );
 					if ( _particle[i].x().z() < _height_function ( _particle[i].x().x(),_particle[i].x().y() ) )
 					{
 						_particle[i].x().setz ( _height_function ( _particle[i].x().x(),_particle[i].x().y() ) +0.002f );
