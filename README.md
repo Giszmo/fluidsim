@@ -127,6 +127,17 @@ it, and the flat ground it was written for, or the teleport wall at z=0..2
 sits buried under the bowl and nothing ever reaches it. `scenes.cpp` is the
 whole of it now, one table entry per scene.
 
+**`funnel` does not hold its water, and that is the 2005 scene being the 2005
+scene.** Its loop is a `teleport`, and a teleport puts everything it catches at
+one target point plus a tenth of where it came in — so the wall, 30 wide and 2
+tall, is mapped onto 3 by 0.2, a thousandfold compression, and the stream
+arriving there blows apart. Measured: 833 particles, top speed 148, and 802 of
+them past r=60 within 48 seconds of simulated time, sliding out across a flat
+frictionless ground that has nothing to stop them. The 2005 clamp would have
+held that 148 at 20, which is slower, not different. `terrain` closes its loop
+with a `shift` instead, which adds a constant to the position and compresses
+nothing, and that one runs indefinitely.
+
 ### terrain
 
     h(x,y) = -slope*x                      the tilt, 0.12
@@ -486,12 +497,19 @@ particles gives 104 fps, 10 000 gives 103 and 40 000 gives 110.
 
 ## Water that left the world
 
-Until 2026 the fountain threw a few particles clean out of the domain every
-few seconds, faster and faster, and they never came back: 3 000 steps of the
-20 000-particle scene ended with 279 particles outside the box, the highest of
-them at z=41 000 and still climbing, and a top speed of 15 400 against a jet
-that sets 70. Two independent faults, and the second one is why the first was
-survivable for twenty years.
+Until 2026 the fountain threw particles clean out of the domain, faster and
+faster, and they never came back. 15 000 steps of the 20 000-particle scene —
+a minute of simulated time — against the domain the cells actually span,
+`[-200,312]` on each axis:
+
+| | before | after |
+|---|---|---|
+| fastest particle in the run | 256 294 | **847.7** |
+| highest particle in the run | 4 221 813 | 20 467 |
+| most particles outside the domain at once | 1 292, and still climbing | **1** |
+
+Two independent faults, and the second one is why the first was survivable for
+twenty years.
 
 **The pressure force divided by a density that goes to zero.** In `collide()`
 the pair force is
@@ -530,14 +548,22 @@ while keeping the term it was there to contain. That clamp has not been put
 back: with the two faults fixed nothing in the fountain reaches 20 that should
 not.
 
-The same 3 000 steps now: top speed **75**, which is the jet's 70 and a bit;
-nothing above 100 after the first splash; **nothing outside the box at any
-point**; highest particle z=190 against a bowl rim at 312. Neither fix touches
-the bulk of the fluid - in `make check`, the puddle resting on the plate comes
-out at `x=[-2.67,1.93] z=[-0.00,0.95]` against `x=[-2.70,2.57] z=[-0.00,0.95]`
-before, and the particles that fall past the plate land within 0.2 of where
-they did. The checksums move, because every position moves a little; the
-`threads=1 vs 20` comparison is unaffected at 1.9e-06.
+What is left is **one** particle in twenty thousand, which takes a hard kick
+early on and goes ballistic. That is not the same thing: its speed is reached
+once, before step 3 000, and never beaten in the twelve thousand steps after,
+so gravity is doing its job and it comes back — apex about 36 600, round trip
+about 170 seconds of simulated time. An 848 is within what this equation of
+state can produce from a bad pair without anything being wrong: the pressure
+factor is bounded by about 89 times the peak of `w_poly6_grad`, which is 43,
+and a particle has some tens of neighbours. The runaway is gone; the stiffness
+is a choice the thesis made.
+
+Neither fix touches the bulk of the fluid. In `make check` the puddle resting
+on the plate comes out at `x=[-2.67,1.93] z=[-0.00,0.95]` against
+`x=[-2.70,2.57] z=[-0.00,0.95]` before, and the particles that fall past the
+plate land within 0.2 of where they did. The checksums move, because every
+position moves a little; the `threads=1 vs 20` comparison is unaffected at
+1.9e-06.
 
 ## Fixed here
 
