@@ -18,6 +18,14 @@
 #include <iostream>
 using namespace std;
 
+#ifdef FLUID_PROBE
+//Diagnostic hooks for test/probe.cpp, which is the only thing that defines
+//FLUID_PROBE. They see the particle as it was when the correction fired,
+//before it was applied.
+void fluid_probe_ground ( unsigned long id, Vektor x, Vektor v, Vektor n );
+void fluid_probe_control ( unsigned long id, int kind, Vektor x, Vektor v, Vektor n );
+#endif
+
 #ifndef WIN32
 #define __int64 long long
 #endif
@@ -475,6 +483,9 @@ class Fluid
 					{
 						_particle[i].x().setz ( _height_function ( _particle[i].x().x(),_particle[i].x().y() ) +0.002f );
 						Vektor tmp_norm = _height_function_normal ( _particle[i].x().x(),_particle[i].x().y() );
+#ifdef FLUID_PROBE
+						fluid_probe_ground ( i,_particle[i].x(),_particle[i].v(),tmp_norm );
+#endif
 						_particle[i].setv ( _particle[i].v() +	tmp_norm.normed() * ( ( _particle[i].v() *tmp_norm.norm ( _ground_bounce ) ) ) );
 					}
 				}
@@ -1950,8 +1961,21 @@ class Fluid
 					case ( boundary ) ://flip velocity vertical to the boundary
 									if ( offset < 0 )
 							{
+#ifdef FLUID_PROBE
+								fluid_probe_control ( first,2,wx,wv,_particle[second].v() );
+#endif
 								wx = wx - _particle[second].v().norm ( offset );
-								wv = wv + _particle[second].v() * ( ( wv *_particle[second].v().norm ( -1.01f ) ) );
+								//Only turn a particle that is moving into the wall. A wall is one
+								//control particle per patch of triangle, and this scan visits
+								//every one of them within a cell - so a particle that arrives at
+								//a corner, or simply where two patches overlap, is seen several
+								//times in the same step. The first turns it around; without this
+								//test the second sees it behind the surface and turns it straight
+								//back in, and at a restitution of 0.01 that leaves it stuck to
+								//the wall. Once it is on its way out, leave it alone.
+								float vn = wv * _particle[second].v();
+								if ( vn < 0 )
+									wv = wv + _particle[second].v() * ( vn * -1.01f );
 								moved = true;
 							}
 						return 10;
@@ -1975,6 +1999,9 @@ class Fluid
 					case ( setspeed ) :
 									if ( offset < 0 )
 							{
+#ifdef FLUID_PROBE
+								fluid_probe_control ( first,5,wx,wv,_particle[second].a() );
+#endif
 								wv = _particle[second].v();
 								moved = true;
 								return 10;

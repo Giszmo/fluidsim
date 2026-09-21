@@ -138,6 +138,55 @@ held that 148 at 20, which is slower, not different. `terrain` closes its loop
 with a `shift` instead, which adds a constant to the position and compresses
 nothing, and that one runs indefinitely.
 
+**Three different things stop a particle, and they do not agree with each
+other.** In `funnel` a particle that arrives at the floor meets one of two of
+them depending on where it lands, which is why the water there sometimes
+bounces and sometimes lands dead:
+
+| | restitution | where |
+|---|---|---|
+| the terrain height function | the scene's `ground_restitution`, 0.8 for `funnel` | everywhere, tested against every particle every step |
+| `boundary` control particles | 0.01, hard-coded in `collide()` | within a cell of a patch of the triangle list |
+| `setspeed` control particles | none: the whole velocity is overwritten | within a cell of the patch |
+
+`funnel`'s floor is a `setspeed` patch at z=1 spanning [-6,6]^2 that sets the
+velocity to (10,0,0) — that is how the scene pushes water east towards its
+teleport wall, and it necessarily throws the vertical speed away. The flat
+ground at z=0 is underneath it and everywhere around it, and gives 80% of the
+normal speed back. Counting arrivals over 4000 steps — a particle below z=5
+still falling faster than 3: **the patch catches 4090 of them and throws away
+a mean arrival speed of 9.9, while the ground bounces 951, from a mean of
+30.** 96% of those bounces happen at x>6, past the end of the patch.
+Following single particles: one comes down at x=1.9 over the patch, settles
+onto it without a single bounce and slides east; another comes down at
+x=-7.2, a unit and a bit outside it, and is thrown back up to z=4.9.
+
+That is the scene, not the solver: the conveyor is what makes the loop work,
+and it only reaches to x=6 while the wall it feeds is at x=15. Widening the
+patch to the wall, or giving `funnel` a lower `ground_restitution` the way
+`terrain` has, would each make the floor behave the same way everywhere.
+
+**A wall used to hold onto water that was already leaving it.** The `boundary`
+branch of `collide()` reflected on position alone: if the particle was behind
+the surface, its normal velocity was flipped, whether it was coming or going.
+A wall is one control particle per patch of triangle and the neighbour scan
+visits every one within a cell, so a particle at a corner — or simply where
+two patches overlap — is seen several times in the same step. The first turns
+it around; the second saw it behind the surface and turned it straight back
+in. With a restitution of 0.01 that leaves it stuck to the wall with no speed
+across it. In `funnel`, **29% of all wall corrections were being applied to
+particles already on their way out**, and the wall fired 67 668 times over
+4000 steps against 49 036 after the fix (`test/probe` counts the declined
+ones too, because its hook runs before the wall's own test - 34% of what is
+left). The reflection now only acts when
+the particle is moving into the wall. The height function never had the
+problem — it lifts the particle 0.002 clear of the ground, so it is never
+seen from behind while leaving: 0 outgoing corrections out of 33 432 in
+`funnel` and 13.2 million in `terrain`.
+
+The `make check` checksums do not move, because their plate is a single flat
+sheet with nothing for a particle to be seen twice by.
+
 ### terrain
 
     h(x,y) = -slope*x                      the tilt, 0.12
@@ -282,6 +331,19 @@ liquid on the centre of a square plate (it comes to rest on it); scenario 1 drop
 beside the plate (it falls straight past). `./test/headless cmp` additionally runs an
 18 296-particle scenario on one thread and on all of them and compares the end states:
 worst displacement 1.9e-06 against a particle diameter of 1.0, i.e. float rounding.
+
+`make test/probe` builds a diagnostic that is not part of `check` because it
+reports rather than judges. It runs a scene without a window and counts every
+correction the solver applies to a velocity, split by whether the particle was
+moving into the surface or already moving away from it:
+
+```sh
+./test/probe funnel 4000
+./test/probe funnel 3000 /tmp/floor.txt   # and every near-floor position, per step
+```
+
+The hooks it uses are compiled into `fluid.h` only under `-DFLUID_PROBE`, which
+nothing but this program defines.
 
 ## The surface
 
