@@ -271,6 +271,11 @@ class Fluid
 		unsigned __int64 _ParticleIdBitmask;
 		Vektor _a;
 		float ( *_height_function ) ( float x, float y );
+		//-(1+e) for a restitution e: what the ground reflection multiplies the
+		//normal component of the velocity by. 0.8 is what this has always been;
+		//a scene where water is meant to run and pool rather than bounce wants
+		//much less.
+		float _ground_bounce;
 		Vektor ( *_height_function_normal ) ( float x, float y );
 
 		//Per-thread accumulators for the two neighbour passes. Both passes write to
@@ -336,6 +341,7 @@ class Fluid
 		{
 			_particle = new Particle[maxparticlecount];
 			_listssorted = false;
+			_ground_bounce = -1.8f;
 
 			_particlecount=_particlecount_physik=_particlecount_boundary=0;
 			if ( _cellsxplus2yzparticlebits > 64 )
@@ -416,6 +422,16 @@ class Fluid
 		{
 			_height_function_normal=height_function_normal;
 		}
+		//How much of the normal component of its velocity a particle keeps when
+		//it bounces off the ground. 1 is elastic, 0 stops it dead.
+		void set_ground_restitution ( float e )
+		{
+			_ground_bounce = - ( 1.0f + e );
+		}
+		float ground_restitution ( void )
+		{
+			return -_ground_bounce - 1.0f;
+		}
 		//void fluid2file(char * filename) {
 		//	_particles.fluid2file(filename);
 		//}
@@ -459,7 +475,7 @@ class Fluid
 					{
 						_particle[i].x().setz ( _height_function ( _particle[i].x().x(),_particle[i].x().y() ) +0.002f );
 						Vektor tmp_norm = _height_function_normal ( _particle[i].x().x(),_particle[i].x().y() );
-						_particle[i].setv ( _particle[i].v() +	tmp_norm.normed() * ( ( _particle[i].v() *tmp_norm.norm ( -1.8f ) ) ) );
+						_particle[i].setv ( _particle[i].v() +	tmp_norm.normed() * ( ( _particle[i].v() *tmp_norm.norm ( _ground_bounce ) ) ) );
 					}
 				}
 				return 1;
@@ -1974,12 +1990,42 @@ class Fluid
 			else
 			{
 				float d = r.abs(); //distance
-				if ( d < _particlesize )  //collide
+				//Two particles at the same point have no direction to be pushed
+				//apart in, and r.norm() would divide by zero and put a NaN into
+				//both of them - which then spreads to every neighbour, and from
+				//there through the whole fluid within a few hundred steps. It
+				//happens: the pressure force is w_poly6_grad, which carries a
+				//factor of d and so *vanishes* as two particles converge, and
+				//poly6 is the one kernel Mueller 2003 explicitly says not to use
+				//for pressure for that reason. A pair that gets close enough
+				//therefore drifts the rest of the way in and lands on the same
+				//float. Measured in the terrain scene: two particles 2.7e-06
+				//apart at step 1660, 0 apart at step 1676, the whole fluid NaN
+				//shortly after. Skipping the pair leaves them merged, which is
+				//two particles behaving as one and harmless; using w_spiky_grad
+				//instead, which is what Mueller does and what this file already
+				//has an unused implementation of, would stop them merging in the
+				//first place, and would change every number the solver produces.
+				if ( d < _particlesize && d > 0 )  //collide
 				{
 #define _gaskonstante 1.05
 #define _rho0 0.100
 #define _m 1
-					f=r.norm ( _gaskonstante* ( _particle[first].rho() +_particle[second].rho()-2*_rho0 ) /2/_particle[second].rho() *w_poly6_grad ( d ) /*-5*/ ) + ( wv-_particle[second].v() ) * ( 14.72f );
+					//The pressure force divides by the neighbour's density, and that
+					//is what used to throw particles out of the world. Take a
+					//particle whose only neighbour is this one, just inside the
+					//kernel radius: its density is m_poly6*u^3 with u = h^2-d^2
+					//going to zero, while w_poly6_grad is m_poly6*u^2*d, so the
+					//quotient diverges like 1/u. A pair grazing each other's kernel
+					//edge with nothing else around therefore gets an unbounded
+					//force - measured at |a| = 9.1e6 in the default scene. Below
+					//rest density there is no compression to push against, so the
+					//divisor never goes under it. 2005 hid this behind a hard speed
+					//clamp in Particle::move(); the 2008 rework dropped the clamp.
+					float rho_second = _particle[second].rho();
+					if ( rho_second < _rho0 )
+						rho_second = _rho0;
+					f=r.norm ( _gaskonstante* ( _particle[first].rho() +_particle[second].rho()-2*_rho0 ) /2/rho_second *w_poly6_grad ( d ) /*-5*/ ) + ( wv-_particle[second].v() ) * ( 14.72f );
 					fbuf[first] = fbuf[first] + f* ( -1 );
 					fbuf[second] = fbuf[second] + f;
 				}

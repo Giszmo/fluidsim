@@ -126,9 +126,20 @@ class Particle
 		{
 			_a = _a + f;
 		};
+		//Semi-implicit Euler. The 2005 code had a fourth line here,
+		//
+		//	_a += _v * t;
+		//
+		//which is not physics: it adds v*dt to the acceleration and so v*dt^2 to
+		//the velocity, every step, in the direction the particle is already
+		//going. That is a gain of (1+dt^2) per step, and it beats gravity above
+		//v = g/dt, so a particle that ever got that fast accelerated away for
+		//good. It is a mangled drag term - the comment that survived next to it,
+		//.norm(_v.absabs()*(-.01f)), is quadratic drag, which is what it was
+		//meant to be. 2005 hid it behind a hard speed clamp (norm to 20 above
+		//400); the 2008 rework dropped the clamp and kept the term.
 		void move ( const float t )
 		{
-			_a += _v * t;//.norm(_v.absabs()*(-.01f)/*/_m*/);
 			_v += _a * t;
 			_x += _v * t;
 		};
