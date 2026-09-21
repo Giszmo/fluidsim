@@ -111,6 +111,11 @@ bool showlight = false;
 //eight corners, which comes out as three filled walls that the water appears
 //to rest on; it is a wireframe now, which is what a reference box should be.
 bool showground = true;
+//The control particles a scene is built out of. There are a lot more of them
+//than there were - one per particlesize^2 of surface, so that a patch has no
+//holes in it - and on a scene like the funnel that is 17 000 dots of plumbing
+//over the water. V puts them away.
+bool showcontrol = true;
 bool showbox = true;
 //Which scene is running. Set from -X/--scene before the window exists.
 const Scene * scene = 0;
@@ -678,6 +683,9 @@ void kbf ( unsigned char key,int x, int y )
 		case 'v' :
 			showparticles = !showparticles;
 			break;
+		case 'V' :
+			showcontrol = !showcontrol;
+			break;
 		case 'y' :
 			PrintVolumeOfClosedSurface();
 			break;
@@ -971,11 +979,11 @@ void DisplayMain ( void )
 		//interesting part. The control particles - the barriers, teleports,
 		//shifts and set-speed patches the scene is built out of - come after
 		//the moving ones in the same array and are drawn dim, so that a scene
-		//with two thousand of them shows its plumbing without burying the water
-		//in it.
+		//with thousands of them shows its plumbing without burying the water in
+		//it. V hides them.
 		glColor3f ( 0.55f,0.80f,1.0f );
 		glDrawArrays ( GL_POINTS,0,shown->movingparticlecount );
-		if ( shown->particlecount > shown->movingparticlecount )
+		if ( showcontrol && shown->particlecount > shown->movingparticlecount )
 		{
 			glColor3f ( 0.22f,0.22f,0.26f );
 			glDrawArrays ( GL_POINTS,shown->movingparticlecount,

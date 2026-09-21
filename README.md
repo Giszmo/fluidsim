@@ -95,6 +95,7 @@ those are two different numbers; see below.
 | `+` / `-` | zoom in / out |
 | `*` / `/` | faster / slower timestep |
 | `v` | show/hide particles |
+| `V` | show/hide the control particles the scene is built out of — the funnel is 17 000 of them |
 | `c` | show/hide the marching-cubes surface |
 | `b` | show/hide the ground |
 | `B` | show/hide the box |
@@ -137,6 +138,30 @@ frictionless ground that has nothing to stop them. The 2005 clamp would have
 held that 148 at 20, which is slower, not different. `terrain` closes its loop
 with a `shift` instead, which adds a constant to the position and compresses
 nothing, and that one runs indefinitely.
+
+**Every patch in the program had holes in it.** A control particle only acts
+on what is within one particle radius of it in every axis — the neighbour scan
+reaches one quarter-cell in x and one half-cell in y and z, and a cell is
+`4*particlesize`. The subdivision that lays control particles down asked for
+2.5 of them per cell of surface area, which is one per 1.22 by 1.22, and 1.22
+is further apart than they can reach. Whatever crossed the gap between two of
+them was not caught at all. Over the funnel's throat, **19% of the hole's area
+was within reach of a control particle**; the rest was gap.
+
+A wall mostly survives that, because water piles up against it and is caught on
+some later step. A patch that acts once, as a particle passes through it, does
+not: at `-n 20000`, counting every downward crossing of `funnel`'s throat plane
+inside the funnel's hole, **1300 of 4686 of them — 28% — fell straight through
+the throat untouched** and landed on the floor ten units above where the scene
+meant to put them. Two kinds of falling water in the same picture, one taking
+the drop the throat gives it and the other not.
+
+The subdivision now asks for one control particle per `particlesize^2`, which
+is the area one can stand in for. Coverage of the throat goes to 100% and the
+leak to 0.07%. It costs 6.4 times as many control particles — 2016 to 12 570
+for the funnel — and about a fifth of the step rate in a scene small enough for
+that to show, and there are now enough of them on screen to be worth a key of
+their own: `V`.
 
 ### How big the array has to be
 
@@ -210,8 +235,12 @@ problem — it lifts the particle 0.002 clear of the ground, so it is never
 seen from behind while leaving: 0 outgoing corrections out of 33 432 in
 `funnel` and 13.2 million in `terrain`.
 
-The `make check` checksums do not move, because their plate is a single flat
-sheet with nothing for a particle to be seen twice by.
+The `make check` checksums did not move for that one, because its plate is a
+single flat sheet with nothing for a particle to be seen twice by. Scenario 0's
+did move when the control particles got closer together: its plate went from 24
+of them to 144, so every number in it is slightly different. The water it holds
+is not — the resting puddle comes out at x=[-2.66,1.93] z=[-0.00,0.95] against
+x=[-2.67,1.93] z=[-0.00,0.95] before.
 
 ### terrain
 
