@@ -301,8 +301,13 @@ int main ( int argc,char** argv )
 	{
 		//The scene's own starting view, as the same rotation matrix the mouse
 		//builds up, so moving the mouse carries on from here.
+		//The rotation has to tip the scene towards the viewer, which means world z
+		//comes out of the screen upwards: the column for z is (0,sa,ca), not
+		//(0,-sa,ca). With the sign the other way round the view is not tipped but
+		//turned over - the funnel's widest ring came out at the bottom of the
+		//window, its throat above it and the ground at z=0 above that.
 		double a = scene->camera_pitch*M_PI/180.0, ca = cos ( a ), sa = sin ( a );
-		double r[16] = { 1,0,0,0,  0,ca,sa,0,  0,-sa,ca,0,  0,0,0,1 };
+		double r[16] = { 1,0,0,0,  0,ca,-sa,0,  0,sa,ca,0,  0,0,0,1 };
 		for ( int m=0;m<16;++m ) rot[m] = r[m];
 	}
 	cout << "scene " << scene->name << ": " << scene->summary << endl;

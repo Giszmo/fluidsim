@@ -597,6 +597,16 @@ falls through — but every neighbour scan that reached that cell walked all of 
 asking for 100 000 particles overran the 150 000 capacity and hung before the first
 frame. Behaviour-neutral to fix: the `make check` checksums did not move.
 
+**Every scene with a tipped camera started upside down.** The starting view is
+built as the same rotation matrix the mouse accumulates, and its column for
+world z was `(0,-sa,ca)` where a rotation that tips the scene *towards* the
+viewer needs `(0,sa,ca)`. At `fountain`'s pitch of 0 there is no difference; at
+`funnel`'s 30 and `terrain`'s 62 the view was not tipped but turned over. The
+funnel's widest ring, radius 25 at z=55, came out at the bottom of the window
+with its throat above it and the ground at z=0 above that, and the terrain's
+rim spikes hung downwards. Both read as plausible scenery, which is why it
+survived a screenshot. Introduced with the scene table, fixed here.
+
 **Linking with GCC.** The makefile drives the compiler as `gcc`, which no longer pulls in
 `libstdc++`; it is `g++` now. That is the only source-level change the 2009 code needed
 to build on a current toolchain.
